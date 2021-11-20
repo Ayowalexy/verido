@@ -4,14 +4,14 @@ const mongoose = require('mongoose');
 const userSchema = new mongoose.Schema({
     full_name: {
         type: String,
-        required: true
+        required: [true, 'Full name cannot be blank']
     },
     username: String,
     phone_number: {
         type: Number,
-        required: true
+        required: [true, 'Phone number is required']
     },
-    organization_id: Number,
+    organization_id: String,
     password: String
 })
 

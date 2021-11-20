@@ -7,13 +7,15 @@ const mongoose = require('mongoose')
 const bodyParser = require('body-parser')
 const User = require('./models/Users')
 const bcrypt = require('bcrypt')
+const catchAsync = require('./utils/catchAsync')
+const ExpressError = require('./utils/expressError')
 
 const PASSWORD = process.env.PASSWORD;
 const DATABASE = process.env.DATABASE
 
 const DB = `mongodb+srv://seinde4:${PASSWORD}@cluster0.pp8yv.mongodb.net/${DATABASE}?retryWrites=true&w=majority` || 'mongodb://localhost:27017/verido';
 
-mongoose.connect(DB, 
+mongoose.connect('mongodb://localhost:27017/verido', 
     {    
     useNewUrlParser: true,
     useUnifiedTopology: true,
@@ -35,48 +37,64 @@ app.get('/', (req, res) => {
     res.send('<h1>Express App is running</h1>')
 })
 
-app.post('/register',  (req, res) => {
-    const { full_name, phone_number, email_address, password, organization_id } = req.body;
-    try {
-        bcrypt.hash(password, 12, async function(err, hash) {
-            const user = new User({full_name, password: hash, phone_number, username: email_address, organization_id})
-            await user.save()
-
-            res.send(`${full_name}, account created`)
-        });
-    
-    } catch (e){
-        console.log(e)
-        res.send('Error in creating user')
+function wrapAsync(fn){
+    return function(next, req){
+        fn(next, req).catch(e => next(e))
     }
+}
+
+app.post('/register', catchAsync(async(req, res, next) => {
+
+    const { full_name, phone_number, email_address, password, organization_id } = req.body;
+    const hash = bcrypt.hashSync(password, 12);
+    const user = new User({full_name, password: hash, phone_number, username: email_address, organization_id})
+    await user.save()
 
 
-})
+}))
 
-app.post('/login', async (req, res) => {
+app.post('/login', catchAsync(async (req, res) => {
 
     const { phone_number, password } = req.body;
-
-    try {
         const user = await User.findOne({phone_number}) 
 
         if(user){
-            bcrypt.compare(password, user.password, function(err, result) {
+            let result = bcrypt.compareSync(password, user.password);
                 if(result){
-                     res.send(`Welcome ${user.full_name}`)
-                 } else if(result === false) {
-                     res.send('Phone number or password is incorrect')
-                 } else {
-                     res.send('Error occured, please try again')
-                 }
-            });
+                    res.json({"code": 200, "status": "success", "message": `Welcome ${user.full_name}`})
+                } else if(result === false) {
+                    res.json({"code": 401, "status": "Unauthorized", "message": "Phone number or password is incorrect"})
+                } else {
+                    res.json({"code": 504, "status": "Gateway timeout", "message": "Error occured, please try again"})
+                }
         } else {
-            res.send(`There is no account associated with ${phone_number}, create a new account now`)
+            res.json({"code": 400, "status": "Unauthorized", "message": `There is no account associated with ${phone_number}, create a new account now`})
         }
-    } catch (e){
-        console.log(e)
-        res.send('Error Logging in, Please try again')
+}))
+
+
+app.all('*', (req, res, next) => {
+    next(new ExpressError('Page Not found', 404))
+})
+
+app.use((err, req, res, next) => {
+    const { statusCode = 500 } = err
+    console.log(err, '===================')
+    //if(!err.message) err.message = 'Oh no, Something went wrong'
+
+    switch(err.name){
+        case 'MongoServerError': 
+            err.message = `${err.keyValue.username} is already registered`
+            break;
+
+        case 'ValidationError':
+            err.message = `${err._message}`
+            break;
+        default :
+            err.message = 'Oh no, Something went wrong'
     }
+    res.status(statusCode).send({"code": statusCode, "status": "error", "message": err.message })
+   
 })
 
 
