@@ -103,8 +103,8 @@ app.get('/login', (req, res) => {
 })
 
 app.post('/login', passport.authenticate('local', {failureRedirect: '/login'}),  async (req, res) => {
-    const { phone_number } = req.body;
-    const user = await User.findOne({phone_number})
+    const { username } = req.body;
+    const user = await User.findOne({username})
     if(user){
         return res.json({"code": 200, "status": "success", "message": `Welcome ${user.full_name}`})
     }
