@@ -84,6 +84,12 @@ app.post('/register', catchAsync(async(req, res, next) => {
     try {
         const { full_name, email, username, password, organization_id } = req.body;
 
+        const emailUser = await User.findOne({email})
+
+        if(emailUser){
+            return res.json({"code": 401, "status": "Duplicate", "message": `${emailUser.email} is already registered`})
+        }
+
         const user = new User({full_name, username, email, username, organization_id})
         const newUser = await User.register(user, password)
         req.login(newUser, e => {
