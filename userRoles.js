@@ -6,13 +6,16 @@ const userRoles = new ConnectRoles({
             res.redirect('/reset-password')
         }
 
-        res.json({"code": 403, "status": "Unauthorised", "message": "Access to password reset is unverified"})
+        res.status(403).json({"code": 403, "status": "Unauthorised", "message": "Access to password reset is unverified"})
 
     }
 })
 
 userRoles.use('access password reset', (req) => {
-    return true
+    if(req.user.role === 'access password reset'){
+        return true
+    }
+    return false
 })
 
 module.exports = userRoles

@@ -11,13 +11,14 @@ const User = require('./models/Users')
 const bcrypt = require('bcrypt')
 const catchAsync = require('./utils/catchAsync')
 const ExpressError = require('./utils/expressError')
-const twilio = require('twilio')(TWILO_ACCOUNT_SID, VERIFICATION_SID, SECRET_KEY, TWILO_AUTH_TOKEN);
+const twilio = require('twilio')(TWILO_ACCOUNT_SID, TWILO_AUTH_TOKEN);
 const log = require('morgan');
 const logger = require('./logger')
 const userRoles = require('./userRoles')
 const passport = require('passport')
 const passportLocal  = require('passport-local');
 const session = require('express-session')
+const axios = require('axios')
 
 
 const sessionConfig = {
@@ -87,7 +88,7 @@ app.post('/register', catchAsync(async(req, res, next) => {
         const emailUser = await User.findOne({email})
 
         if(emailUser){
-            return res.json({"code": 401, "status": "Duplicate", "message": `${emailUser.email} is already registered`})
+            return res.status(401).json({"code": 401, "status": "Duplicate", "message": `${emailUser.email} is already registered`})
         }
 
         const user = new User({full_name, username, email, username, organization_id})
@@ -114,82 +115,78 @@ app.post('/login', passport.authenticate('local', {failureRedirect: '/login'}), 
     if(user){
         return res.json({"code": 200, "status": "success", "message": `Welcome ${user.full_name}`})
     }
-   // throw new Error("Phone number or password is incorrect")
+
 })
 
+let phoneNumber;
 
-app.get('/reset-password', async (req, res) => {
+ app.post('/send-verification', catchAsync(async (req, res) => {
+        
+       try {
+            phoneNumber = req.body.phoneNumber;
 
-    // const { channel, phoneNumber } = req.body
+            twilio.verify.services(process.env.VERIFICATION_SID)
+            .verifications
+            .create({to: phoneNumber, channel: 'sms'})
+            .then(verification => res.status(200).json({"code": 200, "status": "Ok", "message": `${verification.status}`}))
+            .catch(e => {
+                next(e)
+                res.status(500).send(e);
+            });
+       } catch (e){
+           next(e)
+       }
+}));
 
-    let verificationRequest;
+  
+app.post('/verify-otp', catchAsync(async (req, res) => {
 
-    try {
-        verificationRequest = await twilio.verify.services(VERIFICATION_SID)
-          .verifications
-          .create({ to: 08145405006, channel: 'phone' });
-      } catch (e) {
-        // logger.error(e);
-        console.log(e)
-        return res.status(500).send(e);
-      }
-
-    console.log(verificationRequest);
-    // logger.debug(verificationRequest);
-
-    return res.render('verify')
-})
-
-app.post('/reset-password', async(req, res) => {
-    const { verificationCode } = req.body;
-
-    try {
-        verificationResult = await twilio.verify.services(VERIFICATION_SID)
-          .verificationChecks
-          .create({ verificationCode, to: 08145405006 });
-      } catch (e) {
-        console.log(e);
-        // logger.error(e);
-        return res.status(500).send(e);
-      }
-    
-      console.log(verificationResult);
-    //   logger.debug(verificationResult);
-    
-      if (verificationResult.status === 'approved') {
-        // req.user.role = 'access secret content';
-        // await req.user.save();
-        // return res.redirect('/');
-        res.send('input correct')
-      }
-    
-    //   errors.verificationCode = `Unable to verify code. status: ${verificationResult.status}`;
-    //   return res.render('verify', { title: 'Verify', user: req.user, errors });
-})
-
+        try {
+            const { otp } = req.body;
+            const check = await twilio.verify.services(process.env.VERIFICATION_SID)
+                .verificationChecks
+                .create({to: phoneNumber, code: otp})
+                .then(verification => res.status(200).json({"code": 200, "status": "Ok", "message": `${verification.status}`}))
+                .catch(e => {
+                    next(e)
+                    res.status(500).send(e);
+                });
+            
+            res.status(200).send(check);
+        } catch (e){
+            next(e)
+        }
+}));
+      
 
 app.all('*', (req, res, next) => {
     next(new ExpressError('Page Not found', 404))
 })
 
+let code;
+let status;
 app.use((err, req, res, next) => {
     const { statusCode = 500 } = err;
     switch(err.name){
         case 'MongoServerError': 
+            code = 403;
+            status = "Duplicate";
             err.message = `${err.keyValue.username} is already registered`
             break;
 
         case 'ValidationError':
+            code = 403;
+            status = "Forbidden";
             err.message = `${err._message}`
             break;
 
         case 'UserExistsError': 
-            err.message = ' A user with the given Phone number is already registered'
+            err.message = "A user with the given Phone number is already registered"
             break;
         default :
-            err.message = 'Oh no, Something went wrong'
+            err.message = "Oh no, Something went wrong"
     }
-    res.status(statusCode).send({"code": statusCode, "status": "error", "message": err.message })
+    res.status(code ? code : statusCode).json({"code": code ? code : statusCode, "status": status ? status : "error", "message": err.message })
    
 })
 
