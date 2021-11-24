@@ -21,7 +21,24 @@ const userSchema = new mongoose.Schema({
         type: String,
         unique: true,
         index: true
-    }
+    },
+    customer: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Customer'
+    }],
+    product: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Product'
+    }],
+    material_assign: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Material'
+    }],
+    labour_assign: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Labour'
+    }],
+
 })
 
 userSchema.plugin(passportLocalMongoose)
