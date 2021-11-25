@@ -1,12 +1,15 @@
 const mongoose = require('mongoose')
 
 const materialSchema = new mongoose.Schema({
-    material: String,
+    material: {
+        type: String,
+        required: true
+    },
     unit_price: {
         type: Number,
         required: true
     },
-    quantity: {
+    unit_type: {
         type: Number,
         required: true
     }

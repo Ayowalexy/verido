@@ -1,13 +1,24 @@
 const mongoose = require('mongoose')
 
 const labourSchema = new mongoose.Schema({
-    labour: String,
+    title: {
+        type: String,
+        required: true
+    },
+    labout_type: {
+        type: String,
+        required: true
+    },
+    rate: {
+        type: String,
+        required: true
+    },
     unit_price: {
         type: Number,
         required: true
     },
-    quantity: {
-        type: Number,
+    description: {
+        type: String,
         required: true
     }
 })

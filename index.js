@@ -21,7 +21,9 @@ const session = require('express-session')
 const axios = require('axios')
 const Product = require('./models/Product')
 const Material = require('./models/Materials')
-const Labour = require('./models/Labour')
+const Labour = require('./models/Labour');
+const Sale = require('./models/Sale');
+const Customer = require('./models/Customers')
 
 const usersMap = []
 
@@ -44,7 +46,7 @@ const DATABASE = process.env.DATABASE
 
 const DB = `mongodb+srv://seinde4:${PASSWORD}@cluster0.pp8yv.mongodb.net/${DATABASE}?retryWrites=true&w=majority` || 'mongodb://localhost:27017/verido';
 
-mongoose.connect(DB, 
+mongoose.connect('mongodb://localhost:27017/verido', 
     {    
     useNewUrlParser: true,
     useUnifiedTopology: true,
@@ -368,6 +370,57 @@ app.get('/fetch-materials', catchAsync(async (req, res, next) => {
         return next(e)
     }
     
+}))
+
+app.post('/new-sale/:_id', catchAsync(async (req, res, next) => {
+    try {
+        const { _id } = req.params;
+        const { id } = req.user;
+        const user = await User.findOne({id}).populate({
+            path: 'product',
+            populate: {
+                path: 'sale'
+            }
+        });
+        const newSale = new Sale({...req.body});
+        await newSale.save();
+        for(let product of user.product){
+            if(product.id === _id){
+                product.sale.push(newSale)
+                await product.save()
+                return res.status(200).json({"code": 200, "status": "Ok", "message": "New sale succesfully recorded"})
+            } else {
+                return res.status(403).json({"code": 403, "status": "Unauthenticated", "message": "Every sale must be registered for a product, please create a product you will like to index this sale"})
+            }
+        }
+    } catch (e) {
+        return next(e)
+    }
+}))
+
+app.get('/get-all-customers', catchAsync(async (req, res, next) => {
+    try {
+        const { id } = req.user;
+        const user = await User.findOne({id}).populate('customer');
+        const { customer } = user;
+        return res.status(200).json({"code": 200, "status": "success", "message": `All customers for ${user.full_name}`, "response": customer})
+    } catch (e){
+        return next(e)
+    }
+}))
+
+app.post('/add-new-customer', catchAsync(async(req, res, next) => {
+    try {
+        const { id } = req.user;
+        const user = await User.findOne({id})
+        const newCustomer = new Customer({...req.body});
+        await newCustomer.save();
+        user.customer.push(newCustomer);
+        await user.save();
+        return res.status(200).json({"code": 200, "status": "Ok", "message": "New customer added", "new_customer": newCustomer})
+    } catch (e){
+        return next(e)
+    }
 }))
 
 

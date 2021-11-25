@@ -26,10 +26,10 @@ const newProductSchema = new mongoose.Schema({
     rate: {
         type: String
     },
-    sale: {
+    sale: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Sale'
-    },
+    }],
     image: String,
     material: String,
     labour: String
