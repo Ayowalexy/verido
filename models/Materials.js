@@ -10,7 +10,7 @@ const materialSchema = new mongoose.Schema({
         required: true
     },
     unit_type: {
-        type: Number,
+        type: String,
         required: true
     }
 })

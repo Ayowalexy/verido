@@ -24,6 +24,10 @@ const Material = require('./models/Materials')
 const Labour = require('./models/Labour');
 const Sale = require('./models/Sale');
 const Customer = require('./models/Customers')
+const Credit = require('./models/Credit.js');
+const OtherTransaction = require('./models/OtherTransaction');
+const Refund = require('./models/Refund');
+const Supplier = require('./models/Supplier')
 
 const usersMap = []
 
@@ -46,7 +50,7 @@ const DATABASE = process.env.DATABASE
 
 const DB = `mongodb+srv://seinde4:${PASSWORD}@cluster0.pp8yv.mongodb.net/${DATABASE}?retryWrites=true&w=majority` || 'mongodb://localhost:27017/verido';
 
-mongoose.connect('mongodb://localhost:27017/verido', 
+mongoose.connect(DB, 
     {    
     useNewUrlParser: true,
     useUnifiedTopology: true,
@@ -92,13 +96,14 @@ app.post('/register', catchAsync(async(req, res, next) => {
     try {
         const { full_name, email, username, password, organization_id } = req.body;
 
+        console.log(req.body)
         const emailUser = await User.findOne({email})
 
         if(emailUser){
             return res.status(401).json({"code": 401, "status": "Duplicate", "message": `${emailUser.email} is already registered`})
         }
 
-        const user = new User({full_name, username, email, username, organization_id})
+        const user = new User({full_name, username, email, organization_id})
         const newUser = await User.register(user, password)
         req.login(newUser, e => {
             if(e) return next(e)
@@ -119,6 +124,7 @@ app.get('/login', (req, res) => {
 app.post('/login', passport.authenticate('local', {failureRedirect: '/login'}),  async (req, res) => {
     const { username } = req.body;
     const user = await User.findOne({username})
+    req.session.currentUser = req.body;
     if(user){
         return res.json({"code": 200, "status": "success", "message": `Welcome ${user.full_name}`})
     }
@@ -184,9 +190,11 @@ app.post('/verify-otp', catchAsync(async (req, res) => {
 app.post('/add-product', catchAsync(async (req, res, next) => {
 
    try {
-       const { id } = req.user;
+    //    const { id } = req.user;
+    const { username } = req.session.currentUser;
+
        const { product } = req.body;
-       const user = await User.findOne({id}).populate('product')
+       const user = await User.findOne({username}).populate('product')
         console.log(user.product)
       if(user.product.length){
         for(let userProduct of user.product ){
@@ -214,9 +222,11 @@ app.post('/add-product', catchAsync(async (req, res, next) => {
 
 app.post('/add-material', catchAsync(async (req, res, next) => {
     try {
-        const { id } = req.user;
+        // const { id } = req.user;
+        const { username } = req.session.currentUser;
+
         const { material } = req.body;
-        const user = await User.findOne({id}).populate('material_assign')
+        const user = await User.findOne({username}).populate('material_assign')
          console.log(user.material_assign)
        if(user.material_assign.length){
          for(let userMaterial of user.material_assign ){
@@ -246,9 +256,11 @@ app.post('/add-material', catchAsync(async (req, res, next) => {
 
 app.post('/add-labour', catchAsync(async (req, res, next) => {
     try {
-        const { id } = req.user;
+        // const { id } = req.user;
+        const { username } = req.session.currentUser;
+
         const { labour } = req.body;
-        const user = await User.findOne({id}).populate('labour_assign')
+        const user = await User.findOne({username}).populate('labour_assign')
          console.log(user.labour_assign)
        if(user.labour_assign.length){
          for(let userLabour of user.labour_assign ){
@@ -278,9 +290,16 @@ app.post('/add-labour', catchAsync(async (req, res, next) => {
 
 app.get('/fetch-all-product', catchAsync( async(req, res, next) => {
     try {
-        const { id } = req.user;
-        const user = await User.findOne({id})
-                            .populate('product')
+        // const { id } = req.user;
+        const { username } = req.session.currentUser;
+
+        const user = await User.findOne({username})
+                            .populate({
+                                path: 'product',
+                                populate: {
+                                    path: 'sale'
+                                }
+                            })
                             .populate('material_assign')
                             .populate('labour_assign')
                             .populate('customer')
@@ -296,11 +315,13 @@ app.get('/fetch-all-product', catchAsync( async(req, res, next) => {
     }
 }))
 
-app.post('/fetch-single-product', catchAsync(async(req, res) => {
+app.post('/fetch-single-product', catchAsync(async(req, res, next) => {
     try {
-        const { id } = req.user;
+        // const { id } = req.user;
+        const { username } = req.session.currentUser;
+
         const { product } = req.body;
-        const user = await User.findOne({id});
+        const user = await User.findOne({username}).populate('product');
         let singleProductFound;
 
         for(let userProduct of user.product){
@@ -320,13 +341,15 @@ app.post('/fetch-single-product', catchAsync(async(req, res) => {
 
 app.delete('/delete-single-product/:_id', catchAsync( async(req, res, next) => {
     try {
-        if(req.user){
+        if(req.session.currentUser){
             const { _id } = req.params;
-            const { id } = req.user;
-            const user = await User.findOne({id}).populate('product');
+            // const { id } = req.
+            const { username } = req.session.currentUser;
+            
+            const user = await User.findOne({username}).populate('product');
             for(let element of user.product){
                 if(element.id === _id){
-                    await Product.findByIdAndDelete(_id, {...req.body})
+                    await Product.findByIdAndDelete(_id);
                 }
             }
             return res.status(200).json({"code": 200, "status": "Ok", "message": "Deleted"})
@@ -339,10 +362,12 @@ app.delete('/delete-single-product/:_id', catchAsync( async(req, res, next) => {
 
 app.patch('/update-single-product/:_id', catchAsync(async(req, res, next) => {
     try {
-        if(req.user){
+        if(req.session.currentUser){
             const { _id } = req.params;
-            const { id } = req.user;
-            const user = await User.findOne({id}).populate('product');
+            // const { id } = req.user;
+            const { username } = req.session.currentUser;
+
+            const user = await User.findOne({username}).populate('product');
             for(let element of user.product){
                 if(element.id === _id){
                     await Product.findOneAndUpdate(_id, {...req.body})
@@ -359,8 +384,10 @@ app.patch('/update-single-product/:_id', catchAsync(async(req, res, next) => {
 
 app.get('/fetch-materials', catchAsync(async (req, res, next) => {
     try {
-        const { id } = req.user;
-        const user = await User.findOne({id}).populate('material_assign');
+        // const { id } = req.user;
+        const { username } = req.session.currentUser;
+
+        const user = await User.findOne({username}).populate('material_assign');
         const { material_assign } = user;
         if(material_assign){
             return res.status(200).json({"code": 200, "status": "ok", "response": material_assign, "message": "Materials saved"})
@@ -375,8 +402,10 @@ app.get('/fetch-materials', catchAsync(async (req, res, next) => {
 app.post('/new-sale/:_id', catchAsync(async (req, res, next) => {
     try {
         const { _id } = req.params;
-        const { id } = req.user;
-        const user = await User.findOne({id}).populate({
+        // const { id } = req.user;
+        const { username } = req.session.currentUser;
+
+        const user = await User.findOne({username}).populate({
             path: 'product',
             populate: {
                 path: 'sale'
@@ -400,8 +429,10 @@ app.post('/new-sale/:_id', catchAsync(async (req, res, next) => {
 
 app.get('/get-all-customers', catchAsync(async (req, res, next) => {
     try {
-        const { id } = req.user;
-        const user = await User.findOne({id}).populate('customer');
+        // const { id } = req.user;
+        const { username } = req.session.currentUser;
+
+        const user = await User.findOne({username}).populate('customer');
         const { customer } = user;
         return res.status(200).json({"code": 200, "status": "success", "message": `All customers for ${user.full_name}`, "response": customer})
     } catch (e){
@@ -411,8 +442,10 @@ app.get('/get-all-customers', catchAsync(async (req, res, next) => {
 
 app.post('/add-new-customer', catchAsync(async(req, res, next) => {
     try {
-        const { id } = req.user;
-        const user = await User.findOne({id})
+        // const { id } = req.user;
+        const { username } = req.session.currentUser;
+
+        const user = await User.findOne({username})
         const newCustomer = new Customer({...req.body});
         await newCustomer.save();
         user.customer.push(newCustomer);
@@ -424,12 +457,172 @@ app.post('/add-new-customer', catchAsync(async(req, res, next) => {
 }))
 
 
+app.get('/fetch-all-transactions', catchAsync(async(req, res, next) => {
+    try{
+        const { username } = req.session.currentUser;
+        // const { id } = req.user;       
+        const user = await User.findOne({username}).populate({
+            path: 'product',
+            populate: {
+                path: 'sale'
+            }
+        }).populate({
+            path: 'product',
+            populate: {
+                path: 'credit_sale'
+            }
+        })
+        .populate({
+            path: 'other_transaction',
+            populate: {
+                path: 'customer'
+            }
+        })
+        .populate({
+            path: 'refund',
+            populate: {
+                path: 'supplier'
+            }
+        }).populate('customer')
+        .populate('material_assign')
+        .populate('labour_assign')
+        .populate('suppliers')
+       
+        return res.status(200).json({"code": 200, "status": "Ok", "message": "Money in transactions for product sale, refund, and other transactions", "response": user})
+    } catch(e){
+        return next(e)
+    }
+}))
+
+
+app.post('/refund-received', catchAsync(async(req, res, next) => {
+    try {
+        // const { id } = req.user;
+        const { username } = req.session.currentUser;
+
+        const { productID, supplierID } = req.body;
+        const user = await User.findOne({username}).populate('refund').populate('suppliers');
+        const { suppliers } = user;
+        let currentSupplier;
+
+        for(let supplier of suppliers){
+            if(supplier.id === supplierID){
+                currentSupplier = supplier
+            }
+        }
+        const newRefund = new Refund({...req.body})
+        currentSupplier ? newRefund.supplier.push(currentSupplier) : null
+        await newRefund.save();
+        user.refund.push(newRefund)
+        await user.save();
+        return res.status(200).json({"code": 200, "status": "Ok", "message": "New refund recorded", "response": newRefund})
+
+    } catch (e){
+        return next(e)
+    }
+}))
+
+
+app.post('/credit-sale', catchAsync(async(req, res, next) => {
+    try {
+        // const { id } = req.user;
+
+        const { username } = req.session.currentUser;
+
+        const { productID, customerID } = req.body;
+
+
+        const user = await User.findOne({username})
+                            .populate('customer')
+                            .populate('product');
+        const { product } = user;
+
+        let currentCustomer;
+        for(let customer of user.customer){
+            if(customer.id ===  customerID){
+                currentCustomer = customer
+            }
+        }
+
+
+        const newCreditSale = new Credit({...req.body});
+
+        currentCustomer ? newCreditSale.customer.push(currentCustomer) : null
+        await newCreditSale.save();
+        for(let currentProduct of product){
+            if(currentProduct.id === productID){
+                currentProduct.credit_sale.push(newCreditSale)
+                await currentProduct.save()
+            }
+        }
+        await user.save();
+        
+        return res.status(200).json({"code": 200, "status": "Ok", "message": "New credit sale recorded", "response": newCreditSale})
+    } catch(e){
+        return next(e)
+    }
+}))
+
+
+app.post('/add-new-supplier', catchAsync( async( req, res, next) => {
+   try {
+    // const { id } = req.user;
+    const { username } = req.session.currentUser;
+
+    const user = await User.findOne({username}).populate('suppliers');
+    const newSupplier = new Supplier({...req.body});
+    await newSupplier.save()
+    user.suppliers.push(newSupplier);
+    await user.save();
+
+    return res.status(200).json({"code": 200, "status": "Ok", "message": "New Supplier added", "response": newSupplier})
+   } catch (e){
+       return next(e)
+   }
+
+}))
+
+app.post('/other-transaction', catchAsync( async(req, res, next) => {
+    try {
+        const { username } = req.session.currentUser;
+        const { customerID } = req.body;
+
+        const user = await User.findOne({username})
+                            .populate('other_transaction')
+                            .populate('customer');
+
+
+        const newOtherTransaction = new OtherTransaction({...req.body});
+
+        let currentCustomer;
+        for(let customer of user.customer){
+            if(customer.id ===  customerID){
+                currentCustomer = customer
+            }
+        }
+
+        currentCustomer ? newOtherTransaction.customer.push(currentCustomer) : null
+        await newOtherTransaction.save();
+        user.other_transaction.push(newOtherTransaction)
+        await user.save();
+
+        return res.status(200).json({"code": 200, "status": "Ok", "message": "Other transaction catalogued", "response": newOtherTransaction})
+
+
+    } catch (e){
+        return next(e)
+    }
+}))
 
 // app.post('/reset-password', async (req, res) => {
 //     const { password } = req.body
 //     await User.findOneAndUpdate({username: phoneNumber, { username: }})
 // })
-      
+
+app.get('/logout', (req, res) => {
+    req.logout()
+    res.json({"code": 200, "message": "logout"})
+})
 
 app.all('*', (req, res, next) => {
     next(new ExpressError('Page Not found', 404))
@@ -451,6 +644,12 @@ app.use((err, req, res, next) => {
             code = 403;
             status = "Forbidden";
             err.message = `${err._message}`
+            break;
+
+        case 'TypeError':
+            code = 403;
+            status = "Forbidden";
+            err.message = 'You must be logged in to proceed'
             break;
 
         case 'UserExistsError': 

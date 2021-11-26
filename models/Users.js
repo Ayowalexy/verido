@@ -38,6 +38,18 @@ const userSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Labour'
     }],
+    refund: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Refund'
+    }],
+    other_transaction: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Other Transaction'
+    }],
+    suppliers: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Supplier'
+    }]
 
 })
 

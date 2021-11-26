@@ -5,7 +5,7 @@ const labourSchema = new mongoose.Schema({
         type: String,
         required: true
     },
-    labout_type: {
+    labour_type: {
         type: String,
         required: true
     },

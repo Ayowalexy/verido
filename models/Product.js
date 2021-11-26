@@ -30,6 +30,10 @@ const newProductSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Sale'
     }],
+    credit_sale: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Credit'
+    }],
     image: String,
     material: String,
     labour: String
