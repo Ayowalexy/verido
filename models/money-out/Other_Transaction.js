@@ -1,31 +1,29 @@
 const mongoose = require('mongoose')
 
+
 const otherTransactionSchema = new mongoose.Schema({
-    productID: {
+    itemID: {
         type: String,
         required: true
     },
-    discount: Boolean,
-    amount_due: {
-        type: Number,
-        required: true
-    },
-    amount_paid: {
-        type: Number,
-        required: true
-    },
+    amount_due: Number,
+    amount_paid: Number,
+    pament_frequency: String,
+    no_of_times: Number,
+    selected_dates: [{
+        type: String
+    }],
     description: {
         type: String,
         required: true
     },
-    customer: [{
+    supplier: [{
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Customer'
+        ref: 'Supplier'
     }],
     payment_method: String,
     date: String,
     time: String
 })
 
-
-module.exports = mongoose.model('Other Transaction', otherTransactionSchema)
+module.exports = mongoose.model('money_out_other_transaction', otherTransactionSchema)

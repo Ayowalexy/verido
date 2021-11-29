@@ -1,19 +1,16 @@
 const mongoose = require('mongoose')
 
 
-const refundSchema = new mongoose.Schema({
-    productID: {
+const refundGivenSchema = new mongoose.Schema({
+    transactionID: {
         type: String,
         required: true
     },
-    supplier: [{
+    customer: [{
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Supplier'
+        ref: 'Customer'
     }],
-    refund_amount: {
-        type: Number,
-        required: true
-    },
+    redund_amount: Number,
     description: {
         type: String,
         required: true
@@ -23,5 +20,4 @@ const refundSchema = new mongoose.Schema({
     sale_time: String
 })
 
-
-module.exports = mongoose.model('Refund', refundSchema)
+module.exports = mongoose.model('money_out_refund_given', refundGivenSchema)

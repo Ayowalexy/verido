@@ -23,4 +23,6 @@ const labourSchema = new mongoose.Schema({
     }
 })
 
+
+
 module.exports = mongoose.model('Labour', labourSchema)

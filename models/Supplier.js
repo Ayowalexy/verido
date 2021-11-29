@@ -18,4 +18,7 @@ const supplierSchema = new mongoose.Schema({
     post_code: Number
 })
 
+
+
+
 module.exports = mongoose.model('Supplier', supplierSchema)

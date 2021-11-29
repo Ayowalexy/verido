@@ -22,6 +22,7 @@ const userSchema = new mongoose.Schema({
         unique: true,
         index: true
     },
+    subscription_status: String,
     customer: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Customer'
@@ -49,7 +50,41 @@ const userSchema = new mongoose.Schema({
     suppliers: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Supplier'
-    }]
+    }],
+    money_out: {
+         direct_material_purchase: [{
+             type: mongoose.Schema.Types.ObjectId,
+             ref: 'Money_out_direct_materials'
+         }],
+         credit_purchase: [{
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Money_out_credit_purchase'
+         }],
+         direct_labour: [{
+             type: mongoose.Schema.Types.ObjectId,
+             ref: 'Money_out_direct_labour'
+         }],
+         materials: [{
+             type: mongoose.Schema.Types.ObjectId,
+             ref: 'Money_out_material'
+         }],
+         overhead: [{
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Overhead'
+         }],
+         other_transaction: [{
+             type: mongoose.Schema.Types.ObjectId,
+             ref: 'money_out_other_transaction'
+         }],
+         refund_given: [{
+             type: mongoose.Schema.Types.ObjectId,
+             ref: 'money_out_refund_given'
+         }],
+         asset_purchase: [{
+             type: mongoose.Schema.Types.ObjectId,
+             ref: 'Asset_purchase'
+         }]
+    }
 
 })
 

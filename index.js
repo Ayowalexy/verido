@@ -28,6 +28,9 @@ const Credit = require('./models/Credit.js');
 const OtherTransaction = require('./models/OtherTransaction');
 const Refund = require('./models/Refund');
 const Supplier = require('./models/Supplier')
+const MoneyOutRoutes = require('./routes/money-out')
+const path = require('path')
+const fs = require('fs')
 
 const usersMap = []
 
@@ -50,7 +53,7 @@ const DATABASE = process.env.DATABASE
 
 const DB = `mongodb+srv://seinde4:${PASSWORD}@cluster0.pp8yv.mongodb.net/${DATABASE}?retryWrites=true&w=majority` || 'mongodb://localhost:27017/verido';
 
-mongoose.connect(DB, 
+mongoose.connect('mongodb://localhost:27017/verido', 
     {    
     useNewUrlParser: true,
     useUnifiedTopology: true,
@@ -80,9 +83,36 @@ passport.use(new passportLocal(User.authenticate()))
 passport.serializeUser(User.serializeUser())
 passport.deserializeUser(User.deserializeUser())
 
-
 app.get('/', (req, res) => {
     res.send('<h1>Express App is running</h1>')
+})
+
+app.use('/money-out', MoneyOutRoutes)
+
+app.post('/db-lite', (req, res) => {
+
+    const keys = Object.keys(req.body)
+    for(let key of keys){
+        fs.writeFileSync('db-lite.txt', 
+            key + ':' + req.body[key] + '\n', 
+            {
+                encoding: "utf-8", 
+                flag: "a+", 
+                mode: 0o666
+            })
+    }
+    
+
+        const options = {
+            root: path.join(__dirname)
+        }
+        res.sendFile('db-lite.txt', options, function(err){
+            if(err){
+                console.log(err)
+            } else {
+                console.log(`Sent`)
+            }
+        })
 })
 
 function wrapAsync(fn){
@@ -133,6 +163,8 @@ app.post('/login', passport.authenticate('local', {failureRedirect: '/login'}), 
 
 let phoneNumber;
 let foundUser;
+
+
 
  app.post('/send-verification', catchAsync(async (req, res) => {
         
@@ -620,6 +652,7 @@ app.post('/other-transaction', catchAsync( async(req, res, next) => {
 // })
 
 app.get('/logout', (req, res) => {
+    //MAKE SURE TO DESTROY THE session
     req.logout()
     res.json({"code": 200, "message": "logout"})
 })
