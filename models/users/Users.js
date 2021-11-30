@@ -8,6 +8,7 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: [true, 'Full name cannot be blank']
     },
+    token: String,
     email: {
         type: String,
         unique: true,
@@ -25,7 +26,10 @@ const userSchema = new mongoose.Schema({
         unique: true,
         index: true
     },
-    subscription_status: String,
+    subscription_status: {
+        type: String,
+        default: 'Trial'
+    },
     customer: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Customer'
