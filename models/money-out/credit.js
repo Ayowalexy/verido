@@ -1,18 +1,18 @@
 const mongoose = require('mongoose')
 
-const overheadSchema = new mongoose.Schema({
-    overheadID: {
+
+const otherTransactionSchema = new mongoose.Schema({
+    itemID: {
         type: String,
         required: true
     },
-    discount: Boolean,
     amount_due: Number,
     amount_paid: Number,
-    reduction: Number,
-    discount_percent: Number,
-    payment_frequency: String,
+    pament_frequency: String,
     no_of_times: Number,
-    selected_day: String,
+    selected_dates: [{
+        type: String
+    }],
     description: {
         type: String,
         required: true
@@ -26,4 +26,4 @@ const overheadSchema = new mongoose.Schema({
     time: String
 })
 
-module.exports = mongoose.model('overhead', overheadSchema)
+module.exports = mongoose.model('money_out_other', otherTransactionSchema)

@@ -37,4 +37,4 @@ const assetPurchaseSchema = new mongoose.Schema({
     time: String
 })
 
-module.exports = mongoose.model('Asset_purchase', assetPurchaseSchema)
+module.exports = mongoose.model('asset_purchase', assetPurchaseSchema)

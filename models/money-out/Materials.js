@@ -17,4 +17,4 @@ const materialSchema = new mongoose.Schema({
     }
 })
 
-module.exports = mongoose.model('Money_out_material', materialSchema)
+// module.exports = mongoose.model('money_out_material', materialSchema)

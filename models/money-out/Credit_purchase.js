@@ -1,3 +1,4 @@
+
 const mongoose = require('mongoose')
 
 
@@ -29,4 +30,4 @@ const creditPurchaseSchema = new mongoose.Schema({
     sale_time: String
 })
 
-module.exports = mongoose.model('Money_out_credit_purchase', creditPurchaseSchema)
+// module.exports = mongoose.model('money_out_credit_purchase', creditPurchaseSchema)

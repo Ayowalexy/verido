@@ -22,4 +22,4 @@ const directLabourSchema = new mongoose.Schema({
     time: String
 })
 
-module.exports = mongoose.model('Money_out_direct_labour', directLabourSchema)
+module.exports = mongoose.model('money_out_direct_labour', directLabourSchema)

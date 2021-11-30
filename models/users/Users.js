@@ -17,6 +17,9 @@ const userSchema = new mongoose.Schema({
         type: Number,
         required: [true, 'Phone number is required']
     },
+    loginToken: {
+        type: String
+    },
     organization_id: {
         type: String,
         unique: true,
@@ -31,46 +34,48 @@ const userSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Product'
     }],
-    material_assign: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Material'
-    }],
-    labour_assign: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Labour'
-    }],
-    refund: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Refund'
-    }],
-    other_transaction: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Other Transaction'
-    }],
     suppliers: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Supplier'
     }],
+    money_in : {
+        other_transaction: [{
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Other Transaction'
+        }],
+        refund: [{
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Refund'
+        }],
+        material_assign: [{
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Material'
+        }],
+        labour_assign: [{
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Labour'
+        }],
+    },
     money_out: {
          direct_material_purchase: [{
              type: mongoose.Schema.Types.ObjectId,
-             ref: 'Money_out_direct_materials'
+             ref: 'money_out_direct_materials'
          }],
-         credit_purchase: [{
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'Money_out_credit_purchase'
-         }],
+        //  credit_purchase: [{
+        //     type: mongoose.Schema.Types.ObjectId,
+        //     ref: 'money_out_credit_purchase'
+        //  }],
          direct_labour: [{
              type: mongoose.Schema.Types.ObjectId,
-             ref: 'Money_out_direct_labour'
+             ref: 'money_out_direct_labour'
          }],
-         materials: [{
-             type: mongoose.Schema.Types.ObjectId,
-             ref: 'Money_out_material'
-         }],
+        //  materials: [{
+        //      type: mongoose.Schema.Types.ObjectId,
+        //      ref: 'money_out_material'
+        //  }],
          overhead: [{
             type: mongoose.Schema.Types.ObjectId,
-            ref: 'Overhead'
+            ref: 'overhead'
          }],
          other_transaction: [{
              type: mongoose.Schema.Types.ObjectId,
@@ -82,7 +87,7 @@ const userSchema = new mongoose.Schema({
          }],
          asset_purchase: [{
              type: mongoose.Schema.Types.ObjectId,
-             ref: 'Asset_purchase'
+             ref: 'asset_purchase'
          }]
     }
 

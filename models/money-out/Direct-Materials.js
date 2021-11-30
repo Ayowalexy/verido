@@ -17,7 +17,7 @@ const directMaterialSchema = new mongoose.Schema({
         type: String,
         required: true
     },
-    supplierId:[{
+    supplier:[{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Supplier'
     }],
@@ -26,4 +26,4 @@ const directMaterialSchema = new mongoose.Schema({
     time: String
 })
 
-module.exports = mongoose.model('Money_out_direct_materials', directMaterialSchema)
+module.exports = mongoose.model('money_out_direct_materials', directMaterialSchema)

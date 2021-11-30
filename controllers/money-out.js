@@ -1,10 +1,10 @@
+const User = require('../models/users/Users');
 const DirectMaterialPurchase = require('../models/money-out/Direct-Materials')
 const DirectLabourPurchase = require('../models/money-out/Direct-Labour')
 const Overhead = require('../models/money-out/Overhead')
 const AssetPurchase = require('../models/money-out/Asset-purchase')
 const RefundGiven = require('../models/money-out/Refund_Given')
 const OtherTransaction = require('../models/money-out/Other_Transaction')
-const User = require('../models/Users');
 const catchAsync = require('../utils/catchAsync')
 
 module.exports.directMaterialPurchase = catchAsync( async(req, res, next ) => {
