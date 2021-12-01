@@ -91,69 +91,6 @@ app.use('/money-out', MoneyOutRoutes)
 app.use('/money-in', MoneyInRoutes)
 app.use(AuthRoutes)
 
-// const auth = new google.auth.GoogleAuth( opts: {
-//     keyFile: KEYPATH,
-//     scope: SCOPE
-// })
-
-// async function createAndUploadFile(auth){
-//     const driveService = google.drive(options: { version: 'v3', auth})
-
-//     let fileMetaData = {
-//         'name': '2.png',
-//         'parents': ['']
-//     }
-
-//     let media = {
-//         mimeType: 'image/png',
-//         body: fs.createReadStream(path: '2.png')
-//     }
-
-//     let response = await driveService.files.create(params: {
-//         resource: fileMetaData,
-//         media: media,
-//         fields: 'id'
-//     })
-
-
-//     switch(response.status){
-//         case 200: 
-//             console.log(response.data)
-//             break;
-//         default: 
-//             console.log(response)
-//     }
-// }
-
-app.post('/db-lite', (req, res) => {
-
-    const keys = Object.keys(req.body)
-    for(let key of keys){
-        fs.writeFileSync('db-lite.txt', 
-            key + ':' + req.body[key] + '\n', 
-            {
-                encoding: "utf-8", 
-                flag: "a+", 
-                mode: 0o666
-            })
-    }
-    
-
-        const options = {
-            root: path.join(__dirname)
-        }
-        res.sendFile('db-lite.txt', options, function(err){
-            if(err){
-                console.log(err)
-            } else {
-                console.log(`Sent`)
-            }
-        })
-})
-
-app.post('/db-lite/:token', (req, res) => {
-    console.log(req.files)
-})
 
 
 app.get('/fetch-all-product', catchAsync( async(req, res, next) => {
@@ -452,24 +389,132 @@ app.get('/fetch-all-transactions', catchAsync(async(req, res, next) => {
 }))
 
 
-
-
-
-
-
-
 app.post('/add-new-supplier', catchAsync( async( req, res, next) => {
    try {
     // const { id } = req.user;
     const { username } = req.session.currentUser;
 
-    const user = await User.findOne({username}).populate('suppliers');
+    const user = await User.findOne({username}).populate({
+        path: 'product',
+        populate: {
+            path: 'sale'
+        }
+    }).populate({
+        path: 'product',
+        populate: {
+            path: 'credit_sale'
+        }
+    })
+    .populate('customer')
+    .populate('suppliers')
+    .populate({
+        path: 'money_in',
+        populate: {
+            path: 'other_transaction',
+            populate: {
+                path: 'customer'
+            }
+        }
+    })
+    .populate({
+        path: 'money_in',
+        populate: {
+            path: 'refund',
+            populate: {
+                path: 'supplier'
+            }
+        }
+    })
+    .populate({
+        path: 'money_in',
+        populate: {
+            path: 'material_assign',
+        }
+    })
+    .populate({
+        path: 'money_in',
+        populate: {
+            path: 'labour_assign',
+        }
+    })
+    .populate({
+        path: 'money_out',
+        populate: {
+            path: 'direct_material_purchase',
+            populate: {
+                path: 'supplier'
+            }
+        }
+    })
+    .populate({
+        path: 'money_out',
+        populate: {
+            path: 'credit_purchase',
+            populate: {
+                path: 'customer'
+            }
+        }
+    })
+    .populate({
+        path: 'money_out',
+        populate: {
+            path: 'refund_given',
+            populate: {
+                path: 'customer'
+            }
+        }
+    })
+    .populate({
+        path: 'money_out',
+        populate: {
+            path: 'direct_labour',
+            populate: {
+                path: 'supplier'
+            }
+        }
+    })
+    .populate({
+        path: 'money_out',
+        populate: {
+            path: 'asset_purchase',
+            populate: {
+                path: 'supplier'
+            }
+        }
+    })
+    .populate({
+        path: 'money_out',
+        populate: {
+            path: 'overhead',
+            populate: {
+                path: 'supplier'
+            }
+        }
+    })
+    .populate({
+        path: 'money_out',
+        populate: {
+            path: 'other_transaction',
+            populate: {
+                path: 'supplier'
+            }
+        }
+    })
+    .populate({
+        path: 'money_out',
+        populate: {
+            path: 'materials',
+        }
+    }).populate('token')
+    .populate('business')
+    .populate('subscription_status')
+    .populate('database')
     const newSupplier = new Supplier({...req.body});
     await newSupplier.save()
     user.suppliers.push(newSupplier);
     await user.save();
 
-    return res.status(200).json({"code": 200, "status": "Ok", "message": "New Supplier added", "response": newSupplier})
+    return res.status(200).json({"code": 200, "status": "Ok", "message": "New Supplier added", "response": user})
    } catch (e){
        return next(e)
    }
@@ -480,12 +525,126 @@ app.post('/add-new-supplier', catchAsync( async( req, res, next) => {
 app.post('/business-information', catchAsync( async(req, res, next) => {
     try {
         const { username } = req.session.currentUser;
-        const user = await User.findOne({username}).populate('business')
+        const user = await User.findOne({username}).populate({
+            path: 'product',
+            populate: {
+                path: 'sale'
+            }
+        }).populate({
+            path: 'product',
+            populate: {
+                path: 'credit_sale'
+            }
+        })
+        .populate('customer')
+        .populate('suppliers')
+        .populate({
+            path: 'money_in',
+            populate: {
+                path: 'other_transaction',
+                populate: {
+                    path: 'customer'
+                }
+            }
+        })
+        .populate({
+            path: 'money_in',
+            populate: {
+                path: 'refund',
+                populate: {
+                    path: 'supplier'
+                }
+            }
+        })
+        .populate({
+            path: 'money_in',
+            populate: {
+                path: 'material_assign',
+            }
+        })
+        .populate({
+            path: 'money_in',
+            populate: {
+                path: 'labour_assign',
+            }
+        })
+        .populate({
+            path: 'money_out',
+            populate: {
+                path: 'direct_material_purchase',
+                populate: {
+                    path: 'supplier'
+                }
+            }
+        })
+        .populate({
+            path: 'money_out',
+            populate: {
+                path: 'credit_purchase',
+                populate: {
+                    path: 'customer'
+                }
+            }
+        })
+        .populate({
+            path: 'money_out',
+            populate: {
+                path: 'refund_given',
+                populate: {
+                    path: 'customer'
+                }
+            }
+        })
+        .populate({
+            path: 'money_out',
+            populate: {
+                path: 'direct_labour',
+                populate: {
+                    path: 'supplier'
+                }
+            }
+        })
+        .populate({
+            path: 'money_out',
+            populate: {
+                path: 'asset_purchase',
+                populate: {
+                    path: 'supplier'
+                }
+            }
+        })
+        .populate({
+            path: 'money_out',
+            populate: {
+                path: 'overhead',
+                populate: {
+                    path: 'supplier'
+                }
+            }
+        })
+        .populate({
+            path: 'money_out',
+            populate: {
+                path: 'other_transaction',
+                populate: {
+                    path: 'supplier'
+                }
+            }
+        })
+        .populate({
+            path: 'money_out',
+            populate: {
+                path: 'materials',
+            }
+        }).populate('token')
+        .populate('business')
+        .populate('subscription_status')
+        .populate('database')
         const newBusiness = new Business({...req.body});
         await newBusiness.save()
         user.business = newBusiness;
         await user.save()
-        return res.status(200).json({"code": 200, "status": "Ok", "message": "New Business added", "response": newBusiness})
+        return res.status(200).json({"code": 200, "status": "Ok", "message": "New Business added", "response": user})
 
     }
     catch (e){
@@ -493,11 +652,11 @@ app.post('/business-information', catchAsync( async(req, res, next) => {
     }
 }))
 
-app.post('/get-business-information', catchAsync(async(req, res, next) => {
+app.get('/get-business-information', catchAsync(async(req, res, next) => {
     try {
         const { username } = req.session.currentUser;
         const user = await User.findOne({username}).populate('business')
-        return res.status(200).json({"code": 200, "status": "Ok", "message": "New Business added", "response": user.business})
+        return res.status(200).json({"code": 200, "status": "Ok", "message": "Business information", "response": user.business})
     } catch (e){
         return next(e)
     }
@@ -505,38 +664,128 @@ app.post('/get-business-information', catchAsync(async(req, res, next) => {
 
 
 
-app.get('/db-try', async (req, res) => {
-    fs.writeFileSync('sample.txt', 'hello world')
+app.get('/user', catchAsync(async (req, res, next) => {
+    try {
+        const user = await User.findOne({username}).populate({
+            path: 'product',
+            populate: {
+                path: 'sale'
+            }
+        }).populate({
+            path: 'product',
+            populate: {
+                path: 'credit_sale'
+            }
+        })
+        .populate('customer')
+        .populate('suppliers')
+        .populate({
+            path: 'money_in',
+            populate: {
+                path: 'other_transaction',
+                populate: {
+                    path: 'customer'
+                }
+            }
+        })
+        .populate({
+            path: 'money_in',
+            populate: {
+                path: 'refund',
+                populate: {
+                    path: 'supplier'
+                }
+            }
+        })
+        .populate({
+            path: 'money_in',
+            populate: {
+                path: 'material_assign',
+            }
+        })
+        .populate({
+            path: 'money_in',
+            populate: {
+                path: 'labour_assign',
+            }
+        })
+        .populate({
+            path: 'money_out',
+            populate: {
+                path: 'direct_material_purchase',
+                populate: {
+                    path: 'supplier'
+                }
+            }
+        })
+        .populate({
+            path: 'money_out',
+            populate: {
+                path: 'credit_purchase',
+                populate: {
+                    path: 'customer'
+                }
+            }
+        })
+        .populate({
+            path: 'money_out',
+            populate: {
+                path: 'refund_given',
+                populate: {
+                    path: 'customer'
+                }
+            }
+        })
+        .populate({
+            path: 'money_out',
+            populate: {
+                path: 'direct_labour',
+                populate: {
+                    path: 'supplier'
+                }
+            }
+        })
+        .populate({
+            path: 'money_out',
+            populate: {
+                path: 'asset_purchase',
+                populate: {
+                    path: 'supplier'
+                }
+            }
+        })
+        .populate({
+            path: 'money_out',
+            populate: {
+                path: 'overhead',
+                populate: {
+                    path: 'supplier'
+                }
+            }
+        })
+        .populate({
+            path: 'money_out',
+            populate: {
+                path: 'other_transaction',
+                populate: {
+                    path: 'supplier'
+                }
+            }
+        })
+        .populate({
+            path: 'money_out',
+            populate: {
+                path: 'materials',
+            }
+        }).populate('token')
+        .populate('business')
+        .populate('subscription_status')
+        .populate('database')
+    } catch(e){
+        return res.status(200).json({"code": 200, "status": "Ok", "message": "user", "response": user})
 
-        const metadata = {
-            name: "sample.txt",
-            mimeType: "text/plain",
-            parents: 'root'
-        }
-
-        const formData = new FormData()
-        formData.append("metadata", JSON.stringify(matadata), {
-            contentType: "application/json"
-        })
-        formData.append("file", fs.createReadStream("sample.txt"))
-
-        let token = 'ya29.a0ARrdaM_zfui5htVsNExq7LS8UvOWUt0GXOpoxVWDV62BQuEyvv0FWtp5AsEkToj2n07uTfh-LVb1w_mTa0x8zHLS3nmmXxSWdwx47uiNJlGbtP8Jp_V9PsyN7y-NnAsKRgpeOqWVDBcFZWPnGnQEL0ueFAa1'
-        await axios({
-            method: 'POST',
-            url: "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&supportsAllDrives=true",
-            headers: {
-                Authorization: `Bearer ${token}`,
-                "Content-Type": `multipart/related; boundary=${formData.getBoundary()}`
-            },
-            data: formData
-        })
-        .then((res) => {
-            res.send(res.data)
-        })
-        .catch((err) => {
-            res.send(err)
-        })
-})
+    }
+}))
 
 
 // app.post('/reset-password', async (req, res) => {

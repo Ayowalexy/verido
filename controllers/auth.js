@@ -5,13 +5,210 @@ const {TWILO_ACCOUNT_SID, VERIFICATION_SID, SECRET_KEY, TWILO_AUTH_TOKEN} = proc
 const twilio = require('twilio')(TWILO_ACCOUNT_SID, TWILO_AUTH_TOKEN);
 const bcrypt = require('bcrypt')
 const Subscription = require('../models/users/Subcription')
+const Business = require('../models/users/Business')
 const userMap = []
+const CLIENT_ID = process.env.CLIENT_ID
+const CLIENT_SECRET = process.env.CLIENT_SECRET;
+const REDIRECT_URL = process.env.REDIRECT_URL;
+const REFRESH_TOKEN = process.env.REFRESH_TOKEN;
+if(process.env.NODE_ENV !== "production"){
+    require('dotenv').config()
+}
+const { google } = require('googleapis')
+const path = require('path')
+const fs = require('fs');
 
 
+const oauthclient = new google.auth.OAuth2(
+    CLIENT_ID,
+    CLIENT_SECRET,
+    REDIRECT_URL
+)
+
+oauthclient.setCredentials({refresh_token: REFRESH_TOKEN})
+
+const drive = google.drive({
+    version: 'v3',
+    auth: oauthclient
+})
+
+module.exports.veridoDB = catchAsync(async(req, res, next) => {
+    console.log(req.file)
+    
+
+      const { mimetype, originalname, filename, path } = req.file
+      const { username } = req.session.currentUser;
+
+    try {
+        
+        const response =  await drive.files.create({
+            requestBody: {
+                name: filename,
+                mimeType: mimetype
+            },
+            media: {
+                mimeType: mimetype,
+                body: fs.createReadStream(path)
+            }
+        })
+
+        console.log(response.data)
+
+        if(Object.keys(response.data).length){
+            const fileID = response.data.id;
+            await drive.permissions.create({
+                fileId: fileID,
+                requestBody: {
+                    role: 'reader',
+                    type: 'anyone'
+                }
+            })
+    
+            const result = await drive.files.get({
+                fileId: fileID,
+                fields: 'webViewLink, webContentLink'
+            })
+    
+            console.log(result.data.webContentLink)
+            const user = await User.findOne({username}).populate({
+                path: 'product',
+                populate: {
+                    path: 'sale'
+                }
+            }).populate({
+                path: 'product',
+                populate: {
+                    path: 'credit_sale'
+                }
+            })
+            .populate('customer')
+            .populate('suppliers')
+            .populate({
+                path: 'money_in',
+                populate: {
+                    path: 'other_transaction',
+                    populate: {
+                        path: 'customer'
+                    }
+                }
+            })
+            .populate({
+                path: 'money_in',
+                populate: {
+                    path: 'refund',
+                    populate: {
+                        path: 'supplier'
+                    }
+                }
+            })
+            .populate({
+                path: 'money_in',
+                populate: {
+                    path: 'material_assign',
+                }
+            })
+            .populate({
+                path: 'money_in',
+                populate: {
+                    path: 'labour_assign',
+                }
+            })
+            .populate({
+                path: 'money_out',
+                populate: {
+                    path: 'direct_material_purchase',
+                    populate: {
+                        path: 'supplier'
+                    }
+                }
+            })
+            .populate({
+                path: 'money_out',
+                populate: {
+                    path: 'credit_purchase',
+                    populate: {
+                        path: 'customer'
+                    }
+                }
+            })
+            .populate({
+                path: 'money_out',
+                populate: {
+                    path: 'refund_given',
+                    populate: {
+                        path: 'customer'
+                    }
+                }
+            })
+            .populate({
+                path: 'money_out',
+                populate: {
+                    path: 'direct_labour',
+                    populate: {
+                        path: 'supplier'
+                    }
+                }
+            })
+            .populate({
+                path: 'money_out',
+                populate: {
+                    path: 'asset_purchase',
+                    populate: {
+                        path: 'supplier'
+                    }
+                }
+            })
+            .populate({
+                path: 'money_out',
+                populate: {
+                    path: 'overhead',
+                    populate: {
+                        path: 'supplier'
+                    }
+                }
+            })
+            .populate({
+                path: 'money_out',
+                populate: {
+                    path: 'other_transaction',
+                    populate: {
+                        path: 'supplier'
+                    }
+                }
+            })
+            .populate({
+                path: 'money_out',
+                populate: {
+                    path: 'materials',
+                }
+            }).populate('token')
+            .populate('business')
+            .populate('subscription_status')
+            .populate('database')
+
+            
+
+            
+            user.database = result.data.webContentLink;
+
+            await user.save();
+            return res.status(200).json({"code": 200, "status": "Ok", "message": "user details", "response": user})
+
+        }
+    } catch (e){
+        console.log(e.message)
+    }
+})
 module.exports.register = catchAsync(async(req, res, next) => {
 
     try {
+        // const filePath = path.join(__dirname, )
        
+        // const filePath = path.join(__dirname, 'flyer.jpg')
+        
+        console.log(req.file)
+        
+        
         const { path } = req.file || ''
         let token;
         bcrypt.hash(1234, 12, function(err, hash) {
@@ -19,7 +216,6 @@ module.exports.register = catchAsync(async(req, res, next) => {
         })
         const { full_name, email, username, password, organization_id } = req.body;
 
-        console.log(req.body)
         const emailUser = await User.findOne({email})
 
         if(emailUser){
@@ -38,13 +234,143 @@ module.exports.register = catchAsync(async(req, res, next) => {
             expires: date.toDateString()
         })
 
+        const newBusiness = new Business({
+            name: null,
+            sector : null,
+            type : null,
+            currency : null,
+            currencySymbol : null
+        })
+
+        await newBusiness.save()
+
         await newSubcription.save()
-        const user = new User({full_name, username, email, phoneVerified: true, photoUrl: path, dateJoined: dateJoined.toDateString(), organization_id, token})
-        user.subscription_status = newSubcription
+        const user = new User({full_name, username, email, database: "", phoneVerified: true, photoUrl: path, dateJoined: dateJoined.toDateString(), organization_id, token})
+        user.subscription_status = newSubcription;
+        user.business = newBusiness
         const newUser = await User.register(user, password)
+
+
+        const Founduser = await User.findOne({username}).populate({
+            path: 'product',
+            populate: {
+                path: 'sale'
+            }
+        }).populate({
+            path: 'product',
+            populate: {
+                path: 'credit_sale'
+            }
+        })
+        .populate('customer')
+        .populate('suppliers')
+        .populate({
+            path: 'money_in',
+            populate: {
+                path: 'other_transaction',
+                populate: {
+                    path: 'customer'
+                }
+            }
+        })
+        .populate({
+            path: 'money_in',
+            populate: {
+                path: 'refund',
+                populate: {
+                    path: 'supplier'
+                }
+            }
+        })
+        .populate({
+            path: 'money_in',
+            populate: {
+                path: 'material_assign',
+            }
+        })
+        .populate({
+            path: 'money_in',
+            populate: {
+                path: 'labour_assign',
+            }
+        })
+        .populate({
+            path: 'money_out',
+            populate: {
+                path: 'direct_material_purchase',
+                populate: {
+                    path: 'supplier'
+                }
+            }
+        })
+        .populate({
+            path: 'money_out',
+            populate: {
+                path: 'credit_purchase',
+                populate: {
+                    path: 'customer'
+                }
+            }
+        })
+        .populate({
+            path: 'money_out',
+            populate: {
+                path: 'refund_given',
+                populate: {
+                    path: 'customer'
+                }
+            }
+        })
+        .populate({
+            path: 'money_out',
+            populate: {
+                path: 'direct_labour',
+                populate: {
+                    path: 'supplier'
+                }
+            }
+        })
+        .populate({
+            path: 'money_out',
+            populate: {
+                path: 'asset_purchase',
+                populate: {
+                    path: 'supplier'
+                }
+            }
+        })
+        .populate({
+            path: 'money_out',
+            populate: {
+                path: 'overhead',
+                populate: {
+                    path: 'supplier'
+                }
+            }
+        })
+        .populate({
+            path: 'money_out',
+            populate: {
+                path: 'other_transaction',
+                populate: {
+                    path: 'supplier'
+                }
+            }
+        })
+        .populate({
+            path: 'money_out',
+            populate: {
+                path: 'materials',
+            }
+        }).populate('token')
+        .populate('business')
+        .populate('subscription_status')
+        .populate('database')
+
+
         req.login(newUser, e => {
             if(e) return next(e)
-            res.json({"code": 200, "status": "success", "message": `Successfully registered ${user.full_name}`})
+            res.json({"code": 200, "status": "success", "message": `Successfully registered ${user.full_name}`, "response": Founduser})
             //res.redirect('/login')
         })
     } catch(e){
@@ -191,6 +517,8 @@ module.exports.login =  async (req, res, next) => {
         }).populate('token')
         .populate('business')
         .populate('subscription_status')
+        .populate('database')
+        
        
         return res.status(200).json({"code": 200, "status": "Ok", "message": "Money in transactions for product sale, refund, and other transactions", "response": user})
     }
