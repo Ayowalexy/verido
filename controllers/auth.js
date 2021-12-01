@@ -5,11 +5,14 @@ const {TWILO_ACCOUNT_SID, VERIFICATION_SID, SECRET_KEY, TWILO_AUTH_TOKEN} = proc
 const twilio = require('twilio')(TWILO_ACCOUNT_SID, TWILO_AUTH_TOKEN);
 const bcrypt = require('bcrypt')
 const Subscription = require('../models/users/Subcription')
+const userMap = []
+
 
 module.exports.register = catchAsync(async(req, res, next) => {
 
     try {
-
+        
+        const { path = null } = req.file
         let token;
         bcrypt.hash(1234, 12, function(err, hash) {
             token = hash;
@@ -36,7 +39,7 @@ module.exports.register = catchAsync(async(req, res, next) => {
         })
 
         await newSubcription.save()
-        const user = new User({full_name, username, email, phoneVerified: true, dateJoined: dateJoined.toDateString(), organization_id, token})
+        const user = new User({full_name, username, email, phoneVerified: true, photoUrl: path, dateJoined: dateJoined.toDateString(), organization_id, token})
         user.subscription_status = newSubcription
         const newUser = await User.register(user, password)
         req.login(newUser, e => {
@@ -200,10 +203,11 @@ module.exports.sendVerification = catchAsync(async (req, res) => {
         
 
        try {
-           usersMap.push({phoneNumber: phoneNumber})
             phoneNumber = req.body.phoneNumber;
 
+            const num = Math.random()
             const user = await User.findOne({username: phoneNumber})
+            userMap.push({username: phoneNumber, salt: num})
             if(!user){
                 return res.status(403).json({"code": 403, "status": "Authorised", "message": `User with ${phoneNumber} is not registered`})
             }
@@ -227,7 +231,7 @@ module.exports.verifyOTP =  catchAsync(async (req, res) => {
 
     try {
         const { otp } = req.body; 
-         for(let user of usersMap){
+         for(let user of userMap){
             if(user.phoneNumber === phoneNumber){
                 user.otp = otp
             }

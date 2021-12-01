@@ -445,7 +445,7 @@ app.post('/business-information', catchAsync( async(req, res, next) => {
         const user = await User.findOne({username}).populate('business')
         const newBusiness = new Business({...req.body});
         await newBusiness.save()
-        user.business.push(newBusiness)
+        user.business = newBusiness;
         await user.save()
         return res.status(200).json({"code": 200, "status": "Ok", "message": "New Business added", "response": newBusiness})
 
@@ -464,6 +464,41 @@ app.post('/get-business-information', catchAsync(async(req, res, next) => {
         return next(e)
     }
 }))
+
+
+
+app.get('/db-try', async (req, res) => {
+    fs.writeFileSync('sample.txt', 'hello world')
+
+        const metadata = {
+            name: "sample.txt",
+            mimeType: "text/plain",
+            parents: 'root'
+        }
+
+        const formData = new FormData()
+        formData.append("metadata", JSON.stringify(matadata), {
+            contentType: "application/json"
+        })
+        formData.append("file", fs.createReadStream("sample.txt"))
+
+        let token = 'ya29.a0ARrdaM_zfui5htVsNExq7LS8UvOWUt0GXOpoxVWDV62BQuEyvv0FWtp5AsEkToj2n07uTfh-LVb1w_mTa0x8zHLS3nmmXxSWdwx47uiNJlGbtP8Jp_V9PsyN7y-NnAsKRgpeOqWVDBcFZWPnGnQEL0ueFAa1'
+        await axios({
+            method: 'POST',
+            url: "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&supportsAllDrives=true",
+            headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": `multipart/related; boundary=${formData.getBoundary()}`
+            },
+            data: formData
+        })
+        .then((res) => {
+            res.send(res.data)
+        })
+        .catch((err) => {
+            res.send(err)
+        })
+})
 
 
 // app.post('/reset-password', async (req, res) => {

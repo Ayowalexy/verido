@@ -9,6 +9,7 @@ const userSchema = new mongoose.Schema({
         required: [true, 'Full name cannot be blank']
     },
     token: String,
+    photoUrl: String,
     dateJoined : {
         type: String,
     },
@@ -38,10 +39,10 @@ const userSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'subscription'
     },
-    business : [{
+    business : {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'business'
-    }],
+    },
     customer: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Customer'
