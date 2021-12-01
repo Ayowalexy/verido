@@ -216,13 +216,13 @@ module.exports.sendVerification = catchAsync(async (req, res, next) => {
 
             phoneNumber.push({phone: req.body.phoneNumber, salt: salt});
 
-            // const user = await User.findOne({username: phoneNumber})
-            // //userMap.push({username: phoneNumber, salt: num})
-            // if(!user){
-            //     return res.status(403).json({"code": 403, "status": "Authorised", "message": `User with ${phoneNumber} is not registered`})
-            // }
+            const user = await User.findOne({username: phoneNumber})
+            //userMap.push({username: phoneNumber, salt: num})
+            if(!user){
+                return res.status(403).json({"code": 403, "status": "Authorised", "message": `User with ${phoneNumber} is not registered`})
+            }
 
-            // foundUser = user
+            foundUser = user
 
             
             twilio.verify.services(process.env.VERIFICATION_SID)

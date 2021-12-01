@@ -24,7 +24,7 @@ const userSchema = new mongoose.Schema({
         index: true
     },
     username: {
-        type: Number,
+        type: String,
         required: [true, 'Phone number is required']
     },
     loginToken: {
