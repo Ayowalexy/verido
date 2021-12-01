@@ -11,8 +11,8 @@ const userMap = []
 module.exports.register = catchAsync(async(req, res, next) => {
 
     try {
-        
-        const { path = null } = req.file
+       
+        const { path } = req.file || ''
         let token;
         bcrypt.hash(1234, 12, function(err, hash) {
             token = hash;
@@ -59,6 +59,14 @@ module.exports.getLogin =  (req, res) => {
     res.json({"code": 401, "status": "Unauthorized", "message": "Phone number or password is incorrect"})
 }
 
+
+module.exports.dbLite = catchAsync( async (req, res, next) => {
+    try {
+        console.log(req.file)
+    } catch(e){
+        next(e)
+    }
+})
 module.exports.login =  async (req, res, next) => {
     try {
 
@@ -195,28 +203,31 @@ module.exports.login =  async (req, res, next) => {
 }
 
 
-let phoneNumber;
+let phoneNumber = [];
 let foundUser;
 
 
-module.exports.sendVerification = catchAsync(async (req, res) => {
+module.exports.sendVerification = catchAsync(async (req, res, next) => {
         
 
        try {
-            phoneNumber = req.body.phoneNumber;
+            const { salt } = req.params;
 
-            const num = Math.random()
-            const user = await User.findOne({username: phoneNumber})
-            userMap.push({username: phoneNumber, salt: num})
-            if(!user){
-                return res.status(403).json({"code": 403, "status": "Authorised", "message": `User with ${phoneNumber} is not registered`})
-            }
 
-            foundUser = user
+            phoneNumber.push({phone: req.body.phoneNumber, salt: salt});
 
+            // const user = await User.findOne({username: phoneNumber})
+            // //userMap.push({username: phoneNumber, salt: num})
+            // if(!user){
+            //     return res.status(403).json({"code": 403, "status": "Authorised", "message": `User with ${phoneNumber} is not registered`})
+            // }
+
+            // foundUser = user
+
+            
             twilio.verify.services(process.env.VERIFICATION_SID)
             .verifications
-            .create({to: phoneNumber, channel: 'sms'})
+            .create({to: req.body.phoneNumber, channel: 'sms'})
             .then(verification => res.status(200).json({"code": 200, "status": "Ok", "message": `${verification.status}`}))
             .catch(e => {
                 next(e)
@@ -227,19 +238,22 @@ module.exports.sendVerification = catchAsync(async (req, res) => {
        }
 });
 
-module.exports.verifyOTP =  catchAsync(async (req, res) => {
+module.exports.verifyOTP =  catchAsync(async (req, res, next) => {
 
     try {
         const { otp } = req.body; 
-         for(let user of userMap){
-            if(user.phoneNumber === phoneNumber){
-                user.otp = otp
+        const { salt } = req.params
+         
+        let number = phoneNumber.find(data => {
+            if(data.salt ===  salt){
+                return data.phone
             }
-        }
-
+        })
+        console.log(phoneNumber, '======')
+        console.log(number,'===')
         const check = await twilio.verify.services(process.env.VERIFICATION_SID)
             .verificationChecks
-            .create({to: phoneNumber, code: otp})
+            .create({to: number.phone, code: otp})
             .then(verification => res.status(200).json({"code": 200, "status": "Ok", "message": `${verification.status}`}))
             .catch(e => {
                 next(e)

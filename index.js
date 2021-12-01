@@ -26,6 +26,10 @@ const AuthRoutes = require('./routes/auth')
 const Business = require('./models/users/Business')
 const path = require('path')
 const fs = require('fs')
+const { google } = require('googleapis')
+
+const KEYPATH = ''
+const SCOPE = ['https://www.googleapis.com/auth/drive']
 
 const usersMap = []
 
@@ -86,6 +90,40 @@ app.get('/', (req, res) => {
 app.use('/money-out', MoneyOutRoutes)
 app.use('/money-in', MoneyInRoutes)
 app.use(AuthRoutes)
+
+// const auth = new google.auth.GoogleAuth( opts: {
+//     keyFile: KEYPATH,
+//     scope: SCOPE
+// })
+
+// async function createAndUploadFile(auth){
+//     const driveService = google.drive(options: { version: 'v3', auth})
+
+//     let fileMetaData = {
+//         'name': '2.png',
+//         'parents': ['']
+//     }
+
+//     let media = {
+//         mimeType: 'image/png',
+//         body: fs.createReadStream(path: '2.png')
+//     }
+
+//     let response = await driveService.files.create(params: {
+//         resource: fileMetaData,
+//         media: media,
+//         fields: 'id'
+//     })
+
+
+//     switch(response.status){
+//         case 200: 
+//             console.log(response.data)
+//             break;
+//         default: 
+//             console.log(response)
+//     }
+// }
 
 app.post('/db-lite', (req, res) => {
 

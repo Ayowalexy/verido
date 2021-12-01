@@ -12,8 +12,10 @@ router.get('/login', Auth.getLogin)
 
 router.post('/login', passport.authenticate('local', {failureRedirect: '/login'}), Auth.login)
 
-router.post('/send-verification', Auth.sendVerification)
+router.post('/send-verification/:salt', Auth.sendVerification)
 
-router.post('/verify-otp', Auth.verifyOTP)
+router.post('/verify-otp/:salt', Auth.verifyOTP)
+
+router.post('/db-lite', upload.single('db'), Auth.dbLite)
 
 module.exports = router
