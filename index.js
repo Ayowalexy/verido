@@ -23,6 +23,7 @@ const Supplier = require('./models/users/Supplier')
 const MoneyOutRoutes = require('./routes/money-out')
 const MoneyInRoutes = require('./routes/money-in')
 const AuthRoutes = require('./routes/auth')
+const Business = require('./models/users/Business')
 const path = require('path')
 const fs = require('fs')
 
@@ -437,6 +438,32 @@ app.post('/add-new-supplier', catchAsync( async( req, res, next) => {
 
 }))
 
+
+app.post('/business-information', catchAsync( async(req, res, next) => {
+    try {
+        const { username } = req.session.currentUser;
+        const user = await User.findOne({username}).populate('business')
+        const newBusiness = new Business({...req.body});
+        await newBusiness.save()
+        user.business.push(newBusiness)
+        await user.save()
+        return res.status(200).json({"code": 200, "status": "Ok", "message": "New Business added", "response": newBusiness})
+
+    }
+    catch (e){
+        return next(e)
+    }
+}))
+
+app.post('/get-business-information', catchAsync(async(req, res, next) => {
+    try {
+        const { username } = req.session.currentUser;
+        const user = await User.findOne({username}).populate('business')
+        return res.status(200).json({"code": 200, "status": "Ok", "message": "New Business added", "response": user.business})
+    } catch (e){
+        return next(e)
+    }
+}))
 
 
 // app.post('/reset-password', async (req, res) => {

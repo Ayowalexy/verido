@@ -4,6 +4,7 @@ const passport = require('passport')
 const {TWILO_ACCOUNT_SID, VERIFICATION_SID, SECRET_KEY, TWILO_AUTH_TOKEN} = process.env
 const twilio = require('twilio')(TWILO_ACCOUNT_SID, TWILO_AUTH_TOKEN);
 const bcrypt = require('bcrypt')
+const Subscription = require('../models/users/Subcription')
 
 module.exports.register = catchAsync(async(req, res, next) => {
 
@@ -22,7 +23,21 @@ module.exports.register = catchAsync(async(req, res, next) => {
             return res.status(401).json({"code": 401, "status": "Duplicate", "message": `${emailUser.email} is already registered`})
         }
 
-        const user = new User({full_name, username, email, organization_id, token})
+        const dateJoined = new Date();
+        let date = new Date()
+        date.setDate(date.getDate() + 7)
+
+
+        const newSubcription = new Subscription({
+            type: 'trial',
+            status: true,
+            started: dateJoined.toDateString(),
+            expires: date.toDateString()
+        })
+
+        await newSubcription.save()
+        const user = new User({full_name, username, email, phoneVerified: true, dateJoined: dateJoined.toDateString(), organization_id, token})
+        user.subscription_status = newSubcription
         const newUser = await User.register(user, password)
         req.login(newUser, e => {
             if(e) return next(e)
@@ -163,6 +178,8 @@ module.exports.login =  async (req, res, next) => {
                 path: 'materials',
             }
         }).populate('token')
+        .populate('business')
+        .populate('subscription_status')
        
         return res.status(200).json({"code": 200, "status": "Ok", "message": "Money in transactions for product sale, refund, and other transactions", "response": user})
     }

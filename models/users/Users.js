@@ -9,6 +9,14 @@ const userSchema = new mongoose.Schema({
         required: [true, 'Full name cannot be blank']
     },
     token: String,
+    dateJoined : {
+        type: String,
+    },
+    phoneVerified : Boolean,
+    idVerified : {
+        type: Boolean,
+        default: false
+    },
     email: {
         type: String,
         unique: true,
@@ -27,9 +35,13 @@ const userSchema = new mongoose.Schema({
         index: true
     },
     subscription_status: {
-        type: String,
-        default: 'Trial'
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'subscription'
     },
+    business : [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'business'
+    }],
     customer: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Customer'
