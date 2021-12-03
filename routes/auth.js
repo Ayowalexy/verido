@@ -20,6 +20,6 @@ router.post('/send-verification', Auth.sendVerification)
 router.post('/verify-otp', verifyToken, Auth.verifyOTP)
 // router.post('/verify-otp/:salt', Auth.verifyOTP)
 
-router.post('/db-lite', dbUpload.single('db'), Auth.veridoDB)
+router.post('/db-lite',verifyToken,  dbUpload.single('db'), Auth.veridoDB)
 
 module.exports = router
