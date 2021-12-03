@@ -27,6 +27,11 @@ const Business = require('./models/users/Business')
 const path = require('path')
 const fs = require('fs')
 const { google } = require('googleapis')
+const verifyToken = require('./authenticate')
+const jwt = require('jsonwebtoken')
+const multer = require('multer')
+const {storage} = require('./cloudinary/index')
+const upload = multer({ storage })
 
 const KEYPATH = ''
 const SCOPE = ['https://www.googleapis.com/auth/drive']
@@ -87,46 +92,48 @@ app.get('/', (req, res) => {
     res.send('<h1>Express App is running</h1>')
 })
 
-app.use('/money-out', MoneyOutRoutes)
-app.use('/money-in', MoneyInRoutes)
+app.use('/money-out', verifyToken, MoneyOutRoutes)
+app.use('/money-in', verifyToken, MoneyInRoutes)
 app.use(AuthRoutes)
 
 
 
-app.get('/fetch-all-product', catchAsync( async(req, res, next) => {
+app.get('/fetch-all-product',verifyToken, (req, res, next) => {
+  
+        jwt.verify(req.token, 'secretkey', async (err, data) => {
+            if(err){
+                throw new Error('Auth failed')
+            } else {
+                console.log(data.user.username)
+
+                const user = await User.findOne({username: data.user.username})
+                .populate({
+                    path: 'product',
+                    populate: {
+                        path: 'sale'
+                    }
+                })
+                                   
+                    if(user.product.length){
+                    return res.status(200).json({"code": 200, "status": "ok", "response": {"product": user.product}, "message": "Fetch for all products"})
+                    }
+
+                    return res.status(200).json({"code": 200, "status": "ok", "message": "No product saved"})
+            }
+        })
+
+})
+
+app.post('/fetch-single-product', verifyToken, catchAsync(async (req, res, next) => {
     try {
-        // const { id } = req.user;
-        const { username } = req.session.currentUser;
-
-        const user = await User.findOne({username})
-                            .populate({
-                                path: 'product',
-                                populate: {
-                                    path: 'sale'
-                                }
-                            })
-                            .populate('material_assign')
-                            .populate('labour_assign')
-                            .populate('customer')
-        const { product } = user;
-        console.log(user.product)
-        if(product){
-           return res.status(200).json({"code": 200, "status": "ok", "response": {"product": product, "user": user}, "message": "Fetch for all products"})
-        }
-
-        return res.status(200).json({"code": 200, "status": "ok", "message": "No product saved"})
-    } catch (e){
-        return next(e)
-    }
-}))
-
-app.post('/fetch-single-product', catchAsync(async(req, res, next) => {
-    try {
-        // const { id } = req.user;
-        const { username } = req.session.currentUser;
+        jwt.verify(req.token, 'secretkey', async (err, data) => {
+            if(err){
+                throw new Error('Auth Failed')
+            } else {
+                // const { username } = req.session.currentUser;
 
         const { product } = req.body;
-        const user = await User.findOne({username}).populate('product');
+        const user = await User.findOne({username: data.user.username}).populate('product');
         let singleProductFound;
 
         for(let userProduct of user.product){
@@ -137,384 +144,453 @@ app.post('/fetch-single-product', catchAsync(async(req, res, next) => {
         if(singleProductFound){
             return res.status(200).json({"code": 200, "status": "Ok", "response": singleProductFound})
         } 
-    } catch (e) {
-        return next(e)
-    }
-}))
+        return res.status(200).json({"code": 200, "status": "Ok", "response": 'No Product'})
 
-
-
-app.delete('/delete-single-product/:_id', catchAsync( async(req, res, next) => {
-    try {
-        if(req.session.currentUser){
-            const { _id } = req.params;
-            // const { id } = req.
-            const { username } = req.session.currentUser;
-            
-            const user = await User.findOne({username}).populate('product');
-            for(let element of user.product){
-                if(element.id === _id){
-                    await Product.findByIdAndDelete(_id);
-                }
             }
-            return res.status(200).json({"code": 200, "status": "Ok", "message": "Deleted"})
-        }
+        })
+        // const { id } = req.user;
         
     } catch (e) {
         return next(e)
     }
 }))
 
-app.patch('/update-single-product/:_id', catchAsync(async(req, res, next) => {
-    try {
-        if(req.session.currentUser){
-            const { _id } = req.params;
-            // const { id } = req.user;
-            const { username } = req.session.currentUser;
 
-            const user = await User.findOne({username}).populate('product');
-            for(let element of user.product){
-                if(element.id === _id){
-                    await Product.findOneAndUpdate(_id, {...req.body})
+
+app.delete('/delete-single-product/:_id',verifyToken, catchAsync( async(req, res, next) => {
+    try {
+        jwt.verify(req.token, 'secretkey', async(err, data) => {
+            if(err){
+                throw new Error('Auth failed')
+            } else {
+                if(req.session.currentUser){
+                    const { _id } = req.params;
+                    // const { id } = req.
+                    // const { username } = req.session.currentUser;
+                    
+                    const user = await User.findOne({username: data.user.username}).populate('product');
+                    for(let element of user.product){
+                        if(element.id === _id){
+                            await Product.findByIdAndDelete(_id);
+                        }
+                    }
+                    return res.status(200).json({"code": 200, "status": "Ok", "message": "Deleted"})
                 }
             }
-            // user.product.findByIdAndUpdate(_id, {...req.body})
-            return res.status(200).json({"code": 200, "status": "Ok", "message": "Successfully updated"})
-        }
+        })
+        
+        
+    } catch (e) {
+        return next(e)
+    }
+}))
+
+app.patch('/update-single-product/:_id', verifyToken, catchAsync(async(req, res, next) => {
+    try {
+        jwt.verify(req.token, 'secretkey', async(err, data) => {
+            if(err){
+                throw new Error('Auth failed')
+            } else {
+                if(req.session.currentUser){
+                    const { _id } = req.params;
+                    // const { id } = req.user;
+                    // const { username } = req.session.currentUser;
+                    
+                    const user = await User.findOne({username: data.user.username}).populate('product');
+                    for(let element of user.product){
+                        if(element.id === _id){
+                            await Product.findOneAndUpdate(_id, {...req.body})
+                        }
+                    }
+                    // user.product.findByIdAndUpdate(_id, {...req.body})
+                    return res.status(200).json({"code": 200, "status": "Ok", "message": "Successfully updated"})
+                }
+            }
+        })
+        
         
     } catch(e){
         return next(e)
     }
 }))
 
-app.get('/fetch-materials', catchAsync(async (req, res, next) => {
+app.get('/fetch-materials', verifyToken, catchAsync(async (req, res, next) => {
     try {
         // const { id } = req.user;
-        const { username } = req.session.currentUser;
+        // const { username } = req.session.currentUser;
+        jwt.verify(req.token, 'secretkey', async(err, data) => {
+            if(err){
+                res.json({"code": 403, "message": "Auth failed"})
+            } else {
+                const user = await User.findOne({username: data.user.username})
+                .populate({
+                    path: 'money_in',
+                    populate: {
+                        path: 'material_assign'
+                    }
+                })
+                const { material_assign } = user.money_in;
+                if(material_assign){
+                    return res.status(200).json({"code": 200, "status": "ok", "response": material_assign, "message": "Materials saved"})
+                }
+                return res.status(200).json({"code": 200, "status": "ok", "message": "No material saved"})
+            }
+        })
 
-        const user = await User.findOne({username}).populate('material_assign');
-        const { material_assign } = user;
-        if(material_assign){
-            return res.status(200).json({"code": 200, "status": "ok", "response": material_assign, "message": "Materials saved"})
-        }
-        return res.status(200).json({"code": 200, "status": "ok", "message": "No material saved"})
+        
     } catch (e){
         return next(e)
     }
     
 }))
 
-app.post('/new-sale/:_id', catchAsync(async (req, res, next) => {
+app.post('/new-sale/:_id', verifyToken, catchAsync(async (req, res, next) => {
     try {
         const { _id } = req.params;
         // const { id } = req.user;
-        const { username } = req.session.currentUser;
-
-        const user = await User.findOne({username}).populate({
-            path: 'product',
-            populate: {
-                path: 'sale'
+        // const { username } = req.session.currentUser;
+        jwt.verify(req.token, 'secretkey', async(err, data) => {
+            if(err){
+                res.json({"code": 200, "message": "Auth Failed"})
+            } else {
+                const user = await User.findOne({username: data.user.username}).populate({
+                    path: 'product',
+                    populate: {
+                        path: 'sale'
+                    }
+                });
+        
+                let available;
+                const newSale = new Sale({...req.body});
+                await newSale.save();
+                for(let product of user.product){
+                    if(product.id === _id){
+                        available = true
+                        product.sale.push(newSale)
+                        await product.save()
+                    } 
+                }
+        
+                
+                return res.status(200).json({"code": 200, "status": "Ok", "message": "New sale succesfully recorded", "response":newSale})
             }
-        });
-
-        let available;
-        const newSale = new Sale({...req.body});
-        await newSale.save();
-        for(let product of user.product){
-            if(product.id === _id){
-                available = true
-                product.sale.push(newSale)
-                await product.save()
-            } 
-        }
+            
+        })
 
         
-        return res.status(200).json({"code": 200, "status": "Ok", "message": "New sale succesfully recorded"})
 
     } catch (e) {
         return next(e)
     }
 }))
 
-app.get('/get-all-customers', catchAsync(async (req, res, next) => {
+app.get('/get-all-customers', verifyToken, catchAsync(async (req, res, next) => {
     try {
         // const { id } = req.user;
-        const { username } = req.session.currentUser;
-
-        const user = await User.findOne({username}).populate('customer');
+        // const { username } = req.session.currentUser;
+        jwt.verify(req.token, 'secretkey', async(err, data) => {
+            if(err){
+                res.json({"code": 400, "message": "Auth Failed"})
+            } else {
+                const user = await User.findOne({username: data.user.username}).populate('customer');
         const { customer } = user;
-        return res.status(200).json({"code": 200, "status": "success", "message": `All customers for ${user.full_name}`, "response": customer})
+        return res.status(200).json({"code": 200, "status": "success", "message": `All customers`, "response": customer})
+            }
+        })
+
+        
     } catch (e){
         return next(e)
     }
 }))
 
-app.post('/add-new-customer', catchAsync(async(req, res, next) => {
+app.post('/add-new-customer', verifyToken, catchAsync(async(req, res, next) => {
     try {
         // const { id } = req.user;
-        const { username } = req.session.currentUser;
+        // const { username } = req.session.currentUser;
 
-        const user = await User.findOne({username})
-        const newCustomer = new Customer({...req.body});
-        await newCustomer.save();
-        user.customer.push(newCustomer);
-        await user.save();
-        return res.status(200).json({"code": 200, "status": "Ok", "message": "New customer added", "new_customer": newCustomer})
+        jwt.verify(req.token, async(err, data) => {
+            if(err){
+                res.json({"code": 403, "message": "Auth Failed"})
+            } else {
+                const user = await User.findOne({username: data.user.username})
+                const newCustomer = new Customer({...req.body});
+                await newCustomer.save();
+                user.customer.push(newCustomer);
+                await user.save();
+                return res.status(200).json({"code": 200, "status": "Ok", "message": "New customer added", "new_customer": newCustomer})
+            }
+        })
+        
     } catch (e){
         return next(e)
     }
 }))
 
-app.get('/fetch-all-transactions', catchAsync(async(req, res, next) => {
+app.get('/fetch-all-transactions', verifyToken, catchAsync(async(req, res, next) => {
     try{
-        const { username } = req.session.currentUser;
+        // const { username } = req.session.currentUser;
         // const { id } = req.user;       
-        const user = await User.findOne({username}).populate({
-            path: 'product',
-            populate: {
-                path: 'sale'
-            }
-        }).populate({
-            path: 'product',
-            populate: {
-                path: 'credit_sale'
+        jwt.verify(req.token, 'secretkey', async (err, data) => {
+            if(err){
+                res.json({"code": 403, "message": 'Auth Failed'})
+            } else {
+                const user = await User.findOne({username: data.user.username}).populate({
+                    path: 'product',
+                    populate: {
+                        path: 'sale'
+                    }
+                }).populate({
+                    path: 'product',
+                    populate: {
+                        path: 'credit_sale'
+                    }
+                })
+                .populate('customer')
+                .populate('suppliers')
+                .populate({
+                    path: 'money_in',
+                    populate: {
+                        path: 'other_transaction',
+                        populate: {
+                            path: 'customer'
+                        }
+                    }
+                })
+                .populate({
+                    path: 'money_in',
+                    populate: {
+                        path: 'refund',
+                        populate: {
+                            path: 'supplier'
+                        }
+                    }
+                })
+                .populate({
+                    path: 'money_in',
+                    populate: {
+                        path: 'material_assign',
+                    }
+                })
+                .populate({
+                    path: 'money_in',
+                    populate: {
+                        path: 'labour_assign',
+                    }
+                })
+                .populate({
+                    path: 'money_out',
+                    populate: {
+                        path: 'direct_material_purchase',
+                        populate: {
+                            path: 'supplier'
+                        }
+                    }
+                })
+                .populate({
+                    path: 'money_out',
+                    populate: {
+                        path: 'credit_purchase',
+                        populate: {
+                            path: 'customer'
+                        }
+                    }
+                })
+                .populate({
+                    path: 'money_out',
+                    populate: {
+                        path: 'refund_given',
+                        populate: {
+                            path: 'customer'
+                        }
+                    }
+                })
+                .populate({
+                    path: 'money_out',
+                    populate: {
+                        path: 'direct_labour',
+                        populate: {
+                            path: 'supplier'
+                        }
+                    }
+                })
+                .populate({
+                    path: 'money_out',
+                    populate: {
+                        path: 'asset_purchase',
+                        populate: {
+                            path: 'supplier'
+                        }
+                    }
+                })
+                .populate({
+                    path: 'money_out',
+                    populate: {
+                        path: 'overhead',
+                        populate: {
+                            path: 'supplier'
+                        }
+                    }
+                })
+                .populate({
+                    path: 'money_out',
+                    populate: {
+                        path: 'other_transaction',
+                        populate: {
+                            path: 'supplier'
+                        }
+                    }
+                })
+                .populate({
+                    path: 'money_out',
+                    populate: {
+                        path: 'materials',
+                    }
+                })
+               
+                return res.status(200).json({"code": 200, "status": "Ok", "message": "Money in transactions for product sale, refund, and other transactions", "response": user})
             }
         })
-        .populate('customer')
-        .populate('suppliers')
-        .populate({
-            path: 'money_in',
-            populate: {
-                path: 'other_transaction',
-                populate: {
-                    path: 'customer'
-                }
-            }
-        })
-        .populate({
-            path: 'money_in',
-            populate: {
-                path: 'refund',
-                populate: {
-                    path: 'supplier'
-                }
-            }
-        })
-        .populate({
-            path: 'money_in',
-            populate: {
-                path: 'material_assign',
-            }
-        })
-        .populate({
-            path: 'money_in',
-            populate: {
-                path: 'labour_assign',
-            }
-        })
-        .populate({
-            path: 'money_out',
-            populate: {
-                path: 'direct_material_purchase',
-                populate: {
-                    path: 'supplier'
-                }
-            }
-        })
-        .populate({
-            path: 'money_out',
-            populate: {
-                path: 'credit_purchase',
-                populate: {
-                    path: 'customer'
-                }
-            }
-        })
-        .populate({
-            path: 'money_out',
-            populate: {
-                path: 'refund_given',
-                populate: {
-                    path: 'customer'
-                }
-            }
-        })
-        .populate({
-            path: 'money_out',
-            populate: {
-                path: 'direct_labour',
-                populate: {
-                    path: 'supplier'
-                }
-            }
-        })
-        .populate({
-            path: 'money_out',
-            populate: {
-                path: 'asset_purchase',
-                populate: {
-                    path: 'supplier'
-                }
-            }
-        })
-        .populate({
-            path: 'money_out',
-            populate: {
-                path: 'overhead',
-                populate: {
-                    path: 'supplier'
-                }
-            }
-        })
-        .populate({
-            path: 'money_out',
-            populate: {
-                path: 'other_transaction',
-                populate: {
-                    path: 'supplier'
-                }
-            }
-        })
-        .populate({
-            path: 'money_out',
-            populate: {
-                path: 'materials',
-            }
-        })
-       
-        return res.status(200).json({"code": 200, "status": "Ok", "message": "Money in transactions for product sale, refund, and other transactions", "response": user})
+        
     } catch(e){
         return next(e)
     }
 }))
 
 
-app.post('/add-new-supplier', catchAsync( async( req, res, next) => {
+app.post('/add-new-supplier', verifyToken, catchAsync( async( req, res, next) => {
    try {
     // const { id } = req.user;
-    const { username } = req.session.currentUser;
+    // const { username } = req.session.currentUser;
+    jwt.verify(req.token, 'secretkey', async(err, data) => {
+        if(err){
+            res.json({"code": 200, "message": "Auth Failed"})
+        } else {
+            const user = await User.findOne({username: data.user.username}).populate({
+                path: 'product',
+                populate: {
+                    path: 'sale'
+                }
+            }).populate({
+                path: 'product',
+                populate: {
+                    path: 'credit_sale'
+                }
+            })
+            .populate('customer')
+            .populate('suppliers')
+            .populate({
+                path: 'money_in',
+                populate: {
+                    path: 'other_transaction',
+                    populate: {
+                        path: 'customer'
+                    }
+                }
+            })
+            .populate({
+                path: 'money_in',
+                populate: {
+                    path: 'refund',
+                    populate: {
+                        path: 'supplier'
+                    }
+                }
+            })
+            .populate({
+                path: 'money_in',
+                populate: {
+                    path: 'material_assign',
+                }
+            })
+            .populate({
+                path: 'money_in',
+                populate: {
+                    path: 'labour_assign',
+                }
+            })
+            .populate({
+                path: 'money_out',
+                populate: {
+                    path: 'direct_material_purchase',
+                    populate: {
+                        path: 'supplier'
+                    }
+                }
+            })
+            .populate({
+                path: 'money_out',
+                populate: {
+                    path: 'credit_purchase',
+                    populate: {
+                        path: 'customer'
+                    }
+                }
+            })
+            .populate({
+                path: 'money_out',
+                populate: {
+                    path: 'refund_given',
+                    populate: {
+                        path: 'customer'
+                    }
+                }
+            })
+            .populate({
+                path: 'money_out',
+                populate: {
+                    path: 'direct_labour',
+                    populate: {
+                        path: 'supplier'
+                    }
+                }
+            })
+            .populate({
+                path: 'money_out',
+                populate: {
+                    path: 'asset_purchase',
+                    populate: {
+                        path: 'supplier'
+                    }
+                }
+            })
+            .populate({
+                path: 'money_out',
+                populate: {
+                    path: 'overhead',
+                    populate: {
+                        path: 'supplier'
+                    }
+                }
+            })
+            .populate({
+                path: 'money_out',
+                populate: {
+                    path: 'other_transaction',
+                    populate: {
+                        path: 'supplier'
+                    }
+                }
+            })
+            .populate({
+                path: 'money_out',
+                populate: {
+                    path: 'materials',
+                }
+            }).populate('token')
+            .populate('business')
+            .populate('subscription_status')
+            .populate('database')
+            const newSupplier = new Supplier({...req.body});
+            await newSupplier.save()
+            user.suppliers.push(newSupplier);
+            await user.save();
+        
+            return res.status(200).json({"code": 200, "status": "Ok", "message": "New Supplier added", "response": user})
+        }
+    })
 
-    const user = await User.findOne({username}).populate({
-        path: 'product',
-        populate: {
-            path: 'sale'
-        }
-    }).populate({
-        path: 'product',
-        populate: {
-            path: 'credit_sale'
-        }
-    })
-    .populate('customer')
-    .populate('suppliers')
-    .populate({
-        path: 'money_in',
-        populate: {
-            path: 'other_transaction',
-            populate: {
-                path: 'customer'
-            }
-        }
-    })
-    .populate({
-        path: 'money_in',
-        populate: {
-            path: 'refund',
-            populate: {
-                path: 'supplier'
-            }
-        }
-    })
-    .populate({
-        path: 'money_in',
-        populate: {
-            path: 'material_assign',
-        }
-    })
-    .populate({
-        path: 'money_in',
-        populate: {
-            path: 'labour_assign',
-        }
-    })
-    .populate({
-        path: 'money_out',
-        populate: {
-            path: 'direct_material_purchase',
-            populate: {
-                path: 'supplier'
-            }
-        }
-    })
-    .populate({
-        path: 'money_out',
-        populate: {
-            path: 'credit_purchase',
-            populate: {
-                path: 'customer'
-            }
-        }
-    })
-    .populate({
-        path: 'money_out',
-        populate: {
-            path: 'refund_given',
-            populate: {
-                path: 'customer'
-            }
-        }
-    })
-    .populate({
-        path: 'money_out',
-        populate: {
-            path: 'direct_labour',
-            populate: {
-                path: 'supplier'
-            }
-        }
-    })
-    .populate({
-        path: 'money_out',
-        populate: {
-            path: 'asset_purchase',
-            populate: {
-                path: 'supplier'
-            }
-        }
-    })
-    .populate({
-        path: 'money_out',
-        populate: {
-            path: 'overhead',
-            populate: {
-                path: 'supplier'
-            }
-        }
-    })
-    .populate({
-        path: 'money_out',
-        populate: {
-            path: 'other_transaction',
-            populate: {
-                path: 'supplier'
-            }
-        }
-    })
-    .populate({
-        path: 'money_out',
-        populate: {
-            path: 'materials',
-        }
-    }).populate('token')
-    .populate('business')
-    .populate('subscription_status')
-    .populate('database')
-    const newSupplier = new Supplier({...req.body});
-    await newSupplier.save()
-    user.suppliers.push(newSupplier);
-    await user.save();
-
-    return res.status(200).json({"code": 200, "status": "Ok", "message": "New Supplier added", "response": user})
+   
    } catch (e){
        return next(e)
    }
@@ -522,129 +598,136 @@ app.post('/add-new-supplier', catchAsync( async( req, res, next) => {
 }))
 
 
-app.post('/business-information', catchAsync( async(req, res, next) => {
+app.post('/business-information',verifyToken, catchAsync( async(req, res, next) => {
     try {
-        const { username } = req.session.currentUser;
-        const user = await User.findOne({username}).populate({
-            path: 'product',
-            populate: {
-                path: 'sale'
-            }
-        }).populate({
-            path: 'product',
-            populate: {
-                path: 'credit_sale'
+        // const { username } = req.session.currentUser;
+        jwt.verify(req.token, 'secretkey', async(err, data) => {
+            if(err){
+                res.json({"code": 403, "message": "Auth Failed"})
+            } else {
+                const user = await User.findOne({username: data.user.username}).populate({
+                    path: 'product',
+                    populate: {
+                        path: 'sale'
+                    }
+                }).populate({
+                    path: 'product',
+                    populate: {
+                        path: 'credit_sale'
+                    }
+                })
+                .populate('customer')
+                .populate('suppliers')
+                .populate({
+                    path: 'money_in',
+                    populate: {
+                        path: 'other_transaction',
+                        populate: {
+                            path: 'customer'
+                        }
+                    }
+                })
+                .populate({
+                    path: 'money_in',
+                    populate: {
+                        path: 'refund',
+                        populate: {
+                            path: 'supplier'
+                        }
+                    }
+                })
+                .populate({
+                    path: 'money_in',
+                    populate: {
+                        path: 'material_assign',
+                    }
+                })
+                .populate({
+                    path: 'money_in',
+                    populate: {
+                        path: 'labour_assign',
+                    }
+                })
+                .populate({
+                    path: 'money_out',
+                    populate: {
+                        path: 'direct_material_purchase',
+                        populate: {
+                            path: 'supplier'
+                        }
+                    }
+                })
+                .populate({
+                    path: 'money_out',
+                    populate: {
+                        path: 'credit_purchase',
+                        populate: {
+                            path: 'customer'
+                        }
+                    }
+                })
+                .populate({
+                    path: 'money_out',
+                    populate: {
+                        path: 'refund_given',
+                        populate: {
+                            path: 'customer'
+                        }
+                    }
+                })
+                .populate({
+                    path: 'money_out',
+                    populate: {
+                        path: 'direct_labour',
+                        populate: {
+                            path: 'supplier'
+                        }
+                    }
+                })
+                .populate({
+                    path: 'money_out',
+                    populate: {
+                        path: 'asset_purchase',
+                        populate: {
+                            path: 'supplier'
+                        }
+                    }
+                })
+                .populate({
+                    path: 'money_out',
+                    populate: {
+                        path: 'overhead',
+                        populate: {
+                            path: 'supplier'
+                        }
+                    }
+                })
+                .populate({
+                    path: 'money_out',
+                    populate: {
+                        path: 'other_transaction',
+                        populate: {
+                            path: 'supplier'
+                        }
+                    }
+                })
+                .populate({
+                    path: 'money_out',
+                    populate: {
+                        path: 'materials',
+                    }
+                }).populate('token')
+                .populate('business')
+                .populate('subscription_status')
+                .populate('database')
+                const newBusiness = new Business({...req.body});
+                await newBusiness.save()
+                user.business = newBusiness;
+                await user.save()
+                return res.status(200).json({"code": 200, "status": "Ok", "message": "Personal Information Updated", "response": user})
             }
         })
-        .populate('customer')
-        .populate('suppliers')
-        .populate({
-            path: 'money_in',
-            populate: {
-                path: 'other_transaction',
-                populate: {
-                    path: 'customer'
-                }
-            }
-        })
-        .populate({
-            path: 'money_in',
-            populate: {
-                path: 'refund',
-                populate: {
-                    path: 'supplier'
-                }
-            }
-        })
-        .populate({
-            path: 'money_in',
-            populate: {
-                path: 'material_assign',
-            }
-        })
-        .populate({
-            path: 'money_in',
-            populate: {
-                path: 'labour_assign',
-            }
-        })
-        .populate({
-            path: 'money_out',
-            populate: {
-                path: 'direct_material_purchase',
-                populate: {
-                    path: 'supplier'
-                }
-            }
-        })
-        .populate({
-            path: 'money_out',
-            populate: {
-                path: 'credit_purchase',
-                populate: {
-                    path: 'customer'
-                }
-            }
-        })
-        .populate({
-            path: 'money_out',
-            populate: {
-                path: 'refund_given',
-                populate: {
-                    path: 'customer'
-                }
-            }
-        })
-        .populate({
-            path: 'money_out',
-            populate: {
-                path: 'direct_labour',
-                populate: {
-                    path: 'supplier'
-                }
-            }
-        })
-        .populate({
-            path: 'money_out',
-            populate: {
-                path: 'asset_purchase',
-                populate: {
-                    path: 'supplier'
-                }
-            }
-        })
-        .populate({
-            path: 'money_out',
-            populate: {
-                path: 'overhead',
-                populate: {
-                    path: 'supplier'
-                }
-            }
-        })
-        .populate({
-            path: 'money_out',
-            populate: {
-                path: 'other_transaction',
-                populate: {
-                    path: 'supplier'
-                }
-            }
-        })
-        .populate({
-            path: 'money_out',
-            populate: {
-                path: 'materials',
-            }
-        }).populate('token')
-        .populate('business')
-        .populate('subscription_status')
-        .populate('database')
-        const newBusiness = new Business({...req.body});
-        await newBusiness.save()
-        user.business = newBusiness;
-        await user.save()
-        return res.status(200).json({"code": 200, "status": "Ok", "message": "New Business added", "response": user})
+        
 
     }
     catch (e){
@@ -652,11 +735,18 @@ app.post('/business-information', catchAsync( async(req, res, next) => {
     }
 }))
 
-app.get('/get-business-information', catchAsync(async(req, res, next) => {
+app.get('/get-business-information', verifyToken, catchAsync(async(req, res, next) => {
     try {
-        const { username } = req.session.currentUser;
-        const user = await User.findOne({username}).populate('business')
-        return res.status(200).json({"code": 200, "status": "Ok", "message": "Business information", "response": user.business})
+        // const { username } = req.session.currentUser;
+        jwt.verify(req.token, 'secretkey', async(err, data) => {
+            if(err){
+                res.json({"code": 403, "message": "Auth Failed"})
+            } else {
+                const user = await User.findOne({username: data.user.username}).populate('business')
+                return res.status(200).json({"code": 200, "status": "Ok", "message": "Business information", "response": user.business})
+            }
+        })
+        
     } catch (e){
         return next(e)
     }
@@ -664,129 +754,286 @@ app.get('/get-business-information', catchAsync(async(req, res, next) => {
 
 
 
-app.get('/user', catchAsync(async (req, res, next) => {
+app.get('/user', verifyToken, catchAsync(async (req, res, next) => {
     try {
-        const user = await User.findOne({username}).populate({
-            path: 'product',
-            populate: {
-                path: 'sale'
-            }
-        }).populate({
-            path: 'product',
-            populate: {
-                path: 'credit_sale'
+        jwt.verify(req.token, 'secretkey', async(err, data) => {
+            if(err){
+                res.json({"code": 403, "message": "Auth Failed"})
+            } else {
+                const user = await User.findOne({username: data.user.username}).populate({
+                    path: 'product',
+                    populate: {
+                        path: 'sale'
+                    }
+                }).populate({
+                    path: 'product',
+                    populate: {
+                        path: 'credit_sale'
+                    }
+                })
+                .populate('customer')
+                .populate('suppliers')
+                .populate({
+                    path: 'money_in',
+                    populate: {
+                        path: 'other_transaction',
+                        populate: {
+                            path: 'customer'
+                        }
+                    }
+                })
+                .populate({
+                    path: 'money_in',
+                    populate: {
+                        path: 'refund',
+                        populate: {
+                            path: 'supplier'
+                        }
+                    }
+                })
+                .populate({
+                    path: 'money_in',
+                    populate: {
+                        path: 'material_assign',
+                    }
+                })
+                .populate({
+                    path: 'money_in',
+                    populate: {
+                        path: 'labour_assign',
+                    }
+                })
+                .populate({
+                    path: 'money_out',
+                    populate: {
+                        path: 'direct_material_purchase',
+                        populate: {
+                            path: 'supplier'
+                        }
+                    }
+                })
+                .populate({
+                    path: 'money_out',
+                    populate: {
+                        path: 'credit_purchase',
+                        model: 'money_out_credit_purchase',
+                        populate: {
+                            path: 'customer'
+                        }
+                    }
+                })
+                .populate({
+                    path: 'money_out',
+                    populate: {
+                        path: 'refund_given',
+                        populate: {
+                            path: 'customer'
+                        }
+                    }
+                })
+                .populate({
+                    path: 'money_out',
+                    populate: {
+                        path: 'direct_labour',
+                        populate: {
+                            path: 'supplier'
+                        }
+                    }
+                })
+                .populate({
+                    path: 'money_out',
+                    populate: {
+                        path: 'asset_purchase',
+                        populate: {
+                            path: 'supplier'
+                        }
+                    }
+                })
+                .populate({
+                    path: 'money_out',
+                    populate: {
+                        path: 'overhead',
+                        populate: {
+                            path: 'supplier'
+                        }
+                    }
+                })
+                .populate({
+                    path: 'money_out',
+                    populate: {
+                        path: 'other_transaction',
+                        populate: {
+                            path: 'supplier'
+                        }
+                    }
+                })
+                .populate({
+                    path: 'money_out',
+                    populate: {
+                        path: 'materials',
+                    }
+                }).populate('token')
+                .populate('business')
+                .populate('subscription_status')
+                .populate('database')
+                return res.status(200).json({"code": 200, "status": "Ok", "message": "user", "response": user})
             }
         })
-        .populate('customer')
-        .populate('suppliers')
-        .populate({
-            path: 'money_in',
-            populate: {
-                path: 'other_transaction',
-                populate: {
-                    path: 'customer'
-                }
-            }
-        })
-        .populate({
-            path: 'money_in',
-            populate: {
-                path: 'refund',
-                populate: {
-                    path: 'supplier'
-                }
-            }
-        })
-        .populate({
-            path: 'money_in',
-            populate: {
-                path: 'material_assign',
-            }
-        })
-        .populate({
-            path: 'money_in',
-            populate: {
-                path: 'labour_assign',
-            }
-        })
-        .populate({
-            path: 'money_out',
-            populate: {
-                path: 'direct_material_purchase',
-                populate: {
-                    path: 'supplier'
-                }
-            }
-        })
-        .populate({
-            path: 'money_out',
-            populate: {
-                path: 'credit_purchase',
-                populate: {
-                    path: 'customer'
-                }
-            }
-        })
-        .populate({
-            path: 'money_out',
-            populate: {
-                path: 'refund_given',
-                populate: {
-                    path: 'customer'
-                }
-            }
-        })
-        .populate({
-            path: 'money_out',
-            populate: {
-                path: 'direct_labour',
-                populate: {
-                    path: 'supplier'
-                }
-            }
-        })
-        .populate({
-            path: 'money_out',
-            populate: {
-                path: 'asset_purchase',
-                populate: {
-                    path: 'supplier'
-                }
-            }
-        })
-        .populate({
-            path: 'money_out',
-            populate: {
-                path: 'overhead',
-                populate: {
-                    path: 'supplier'
-                }
-            }
-        })
-        .populate({
-            path: 'money_out',
-            populate: {
-                path: 'other_transaction',
-                populate: {
-                    path: 'supplier'
-                }
-            }
-        })
-        .populate({
-            path: 'money_out',
-            populate: {
-                path: 'materials',
-            }
-        }).populate('token')
-        .populate('business')
-        .populate('subscription_status')
-        .populate('database')
-    } catch(e){
-        return res.status(200).json({"code": 200, "status": "Ok", "message": "user", "response": user})
+        
 
+    } catch(e){
+        return next(e)
     }
 }))
 
+
+app.post('/update-profile', verifyToken, upload.single('display-picture'), catchAsync(async(req, res, next) => {
+    try {
+        jwt.verify(req.token, 'secretkey', async(err, data) => {
+            if(err){
+                res.json({"code": 403, "message" : "Auth Failed"})
+            }else {
+                 const { path } = req.file || ''
+                    //console.log(req.file)
+
+                // const profile = await  User.findOneAndUpdate(data.user.username
+                const profile = await  User.findOne({username: data.user.username}
+                    //, 
+                    // {full_name: req.body.full_name ? req.body.full_name : data.user.username.full_name,
+                    // email: req.body.email ? req.body.email : data.user.username.email,
+                    // photoUrl: req.file.path ? path : data.user.username.photoUrl,
+                        
+                    // }
+                    ).populate({
+                    path: 'product',
+                    populate: {
+                        path: 'sale'
+                    }
+                }).populate({
+                    path: 'product',
+                    populate: {
+                        path: 'credit_sale'
+                    }
+                })
+                .populate('customer')
+                .populate('suppliers')
+                .populate({
+                    path: 'money_in',
+                    populate: {
+                        path: 'other_transaction',
+                        populate: {
+                            path: 'customer'
+                        }
+                    }
+                })
+                .populate({
+                    path: 'money_in',
+                    populate: {
+                        path: 'refund',
+                        populate: {
+                            path: 'supplier'
+                        }
+                    }
+                })
+                .populate({
+                    path: 'money_in',
+                    populate: {
+                        path: 'material_assign',
+                    }
+                })
+                .populate({
+                    path: 'money_in',
+                    populate: {
+                        path: 'labour_assign',
+                    }
+                })
+                .populate({
+                    path: 'money_out',
+                    populate: {
+                        path: 'direct_material_purchase',
+                        populate: {
+                            path: 'supplier'
+                        }
+                    }
+                })
+                .populate({
+                    path: 'money_out',
+                    populate: {
+                        path: 'credit_purchase',
+                        populate: {
+                            path: 'customer'
+                        }
+                    }
+                })
+                .populate({
+                    path: 'money_out',
+                    populate: {
+                        path: 'refund_given',
+                        populate: {
+                            path: 'customer'
+                        }
+                    }
+                })
+                .populate({
+                    path: 'money_out',
+                    populate: {
+                        path: 'direct_labour',
+                        populate: {
+                            path: 'supplier'
+                        }
+                    }
+                })
+                .populate({
+                    path: 'money_out',
+                    populate: {
+                        path: 'asset_purchase',
+                        populate: {
+                            path: 'supplier'
+                        }
+                    }
+                })
+                .populate({
+                    path: 'money_out',
+                    populate: {
+                        path: 'overhead',
+                        populate: {
+                            path: 'supplier'
+                        }
+                    }
+                })
+                .populate({
+                    path: 'money_out',
+                    populate: {
+                        path: 'other_transaction',
+                        populate: {
+                            path: 'supplier'
+                        }
+                    }
+                })
+                .populate({
+                    path: 'money_out',
+                    populate: {
+                        path: 'materials',
+                    }
+                }).populate('token')
+                .populate('business')
+                .populate('subscription_status')
+                .populate('database')
+
+                profile.full_name = req.body.full_name ? req.body.full_name : data.user.username.full_name,
+                 profile.email = req.body.email ? req.body.email : data.user.username.email,
+                profile.photoUrl = req.file.path ? path : data.user.username.photoUrl
+                await profile.save()
+               
+
+                    return res.status(200).json({"code": 200, "status": "Ok", "message": "user", "response": profile})
+
+            }
+        })
+    }catch (e){
+        return next(e)
+    }
+}))
 
 // app.post('/reset-password', async (req, res) => {
 //     const { password } = req.body
@@ -812,7 +1059,8 @@ app.use((err, req, res, next) => {
         case 'MongoServerError': 
             code = 403;
             status = "Duplicate";
-            err.message = `${err.keyValue.username} is already registered`
+            err.message = `username is already registered`
+            // err.message = `${err.keyValue.username} is already registered`
             break;
 
         case 'ValidationError':
@@ -830,6 +1078,7 @@ app.use((err, req, res, next) => {
         case 'UserExistsError': 
             err.message = "A user with the given Phone number is already registered"
             break;
+
         default :
             err.message = "Oh no, Something went wrong"
     }

@@ -1,12 +1,12 @@
 
 const mongoose = require('mongoose')
 const passportLocalMongoose = require('passport-local-mongoose')
+const Credit = require('../money-out/Credit_purchase')
 
 
 const userSchema = new mongoose.Schema({
     full_name: {
         type: String,
-        required: [true, 'Full name cannot be blank']
     },
     token: String,
     photoUrl: String,
@@ -20,8 +20,6 @@ const userSchema = new mongoose.Schema({
     },
     email: {
         type: String,
-        unique: true,
-        index: true
     },
     database: String,
     username: {
@@ -32,9 +30,7 @@ const userSchema = new mongoose.Schema({
         type: String
     },
     organization_id: {
-        type: String,
-        unique: true,
-        index: true
+        type: String
     },
     subscription_status: {
         type: mongoose.Schema.Types.ObjectId,
@@ -79,10 +75,11 @@ const userSchema = new mongoose.Schema({
              type: mongoose.Schema.Types.ObjectId,
              ref: 'money_out_direct_materials'
          }],
-        //  credit_purchase: [{
-        //     type: mongoose.Schema.Types.ObjectId,
-        //     ref: 'money_out_credit_purchase'
-        //  }],
+         credit_purchase: [{
+            type: mongoose.Schema.Types.ObjectId,
+            // ref: 'money_out_credit_purchase'
+            ref: Credit
+         }],
          direct_labour: [{
              type: mongoose.Schema.Types.ObjectId,
              ref: 'money_out_direct_labour'

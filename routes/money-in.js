@@ -1,8 +1,9 @@
 const express = require('express')
 const router = express.Router();
 const MoneyIn = require('../controllers/money-in')
+const verifyToken = require('../authenticate')
 
-router.post('/add-product', MoneyIn.addProduct);
+router.post('/add-product',verifyToken, MoneyIn.addProduct);
 
 router.post('/add-material', MoneyIn.addMaterial)
 

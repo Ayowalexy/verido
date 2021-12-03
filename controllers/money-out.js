@@ -5,14 +5,21 @@ const Overhead = require('../models/money-out/Overhead')
 const AssetPurchase = require('../models/money-out/Asset-purchase')
 const RefundGiven = require('../models/money-out/Refund_Given')
 const OtherTransaction = require('../models/money-out/Other_Transaction')
-const catchAsync = require('../utils/catchAsync')
+const catchAsync = require('../utils/catchAsync');
+const jwt = require('jsonwebtoken');
 
 module.exports.directMaterialPurchase = catchAsync( async(req, res, next ) => {
    try {
-        const  { supplierID = null } = req.body;
 
-        const { username } = req.session.currentUser;
-        const user = await User.findOne({username}).populate({
+    jwt.verify(req.token, 'secretkey', async(err, data) => {
+        if(err){
+            res.json({"code": 403, "message": "Auth Failed"})
+        } else {
+            const  { supplierID = null } = req.body;
+
+        // const { username } = req.session.currentUser;
+
+        const user = await User.findOne({username: data.user.username}).populate({
             path: 'money_out',
             populate: {
                 path: 'direct_material_purchase'
@@ -34,6 +41,9 @@ module.exports.directMaterialPurchase = catchAsync( async(req, res, next ) => {
         user.money_out.direct_material_purchase.push(newDirectMaterialPurchase)
         await user.save();
         return res.status(200).json({"code": 200, "message": "Ok", "response": newDirectMaterialPurchase})
+        }
+    })
+        
    } catch (e){
        return next(e)
    }
@@ -41,9 +51,15 @@ module.exports.directMaterialPurchase = catchAsync( async(req, res, next ) => {
 
 module.exports.directLabourPurchase = catchAsync( async (req, res, next) => {
     try {
-        const { username } = req.session.currentUser;
-        const { supplierID = null } = req.body;
-        const user = await User.findOne({username}).populate({
+        // const { username } = req.session.currentUser;
+
+        jwt.verify(req.token, 'secretkey', async(err, data) => {
+            if(err){
+                res.json({"code": 403, "message": "Auth Failed"})
+            } else {
+                const { supplierID = null } = req.body;
+
+        const user = await User.findOne({username: data.user.username}).populate({
             path: 'money_out',
             populate: {
                 path: 'direct_labour'
@@ -66,6 +82,9 @@ module.exports.directLabourPurchase = catchAsync( async (req, res, next) => {
 
         return res.status(200).json({"code": 200, "message": "ok", "response": newDirectLabourPurchase})
 
+            }
+        })
+        
 
     } catch(e){
         return next(e)
@@ -74,9 +93,14 @@ module.exports.directLabourPurchase = catchAsync( async (req, res, next) => {
 
 module.exports.overhead = catchAsync( async(req, res, next) => {
     try {
-        const { username } = req.session.currentUser;
+
+        jwt.verify(req.token, 'secretkey', async(err, data) => {
+            if(err){
+                res.json({"code": 403, "message": "Auth Failed"})
+            } else {
+                 // const { username } = req.session.currentUser;
         const { supplierID = null } = req.body;
-        const user = await User.findOne({username}).populate({
+        const user = await User.findOne({username: data.user.username}).populate({
             path: 'money_out',
             populate: {
                 path: 'overhead'
@@ -99,6 +123,9 @@ module.exports.overhead = catchAsync( async(req, res, next) => {
         await user.save();
 
         return res.status(200).json({"code": 200, "message": "ok", "response": newOverhead})
+            }
+        })
+       
 
     } catch (e){
         return next(e)
@@ -107,32 +134,39 @@ module.exports.overhead = catchAsync( async(req, res, next) => {
 
 module.exports.assetPurchase = catchAsync(async(req, res, next) => {
         try {
-            const { username } = req.session.currentUser;
-            const { supplierID = null } = req.body;
-            const user = await User.findOne({username}).populate({
-                path: 'money_out',
-                populate: {
-                    path: 'asset_purchase'
-                }
-            }).populate('suppliers');
-    
-            let currentSupplier;
-            if(supplierID){
-                for(let supplier of user.suppliers){
-                    if(supplier.id === supplierID){
-                        currentSupplier = supplier;
+            // const { username } = req.session.currentUser;
+            jwt.verify(req.token, 'secretkey', async(err, data) => {
+                if(err){
+                    res.json({"code": 403, "message": "Auth Failed"})
+                } else {
+                    const { supplierID = null } = req.body;
+                    const user = await User.findOne({username: data.user.username}).populate({
+                        path: 'money_out',
+                        populate: {
+                            path: 'asset_purchase'
+                        }
+                    }).populate('suppliers');
+            
+                    let currentSupplier;
+                    if(supplierID){
+                        for(let supplier of user.suppliers){
+                            if(supplier.id === supplierID){
+                                currentSupplier = supplier;
+                            }
+                        }
                     }
+            
+                    const newAssetPurchase = new AssetPurchase({...req.body});
+                    currentSupplier ? newAssetPurchase.supplier.push(currentSupplier) : null
+                    await newAssetPurchase.save();
+                    user.money_out.asset_purchase.push(newAssetPurchase);
+                    await user.save();
+            
+                    return res.status(200).json({"code": 200, "message": "ok", "response": newAssetPurchase})
+            
                 }
-            }
-    
-            const newAssetPurchase = new AssetPurchase({...req.body});
-            currentSupplier ? newAssetPurchase.supplier.push(currentSupplier) : null
-            await newAssetPurchase.save();
-            user.money_out.asset_purchase.push(newAssetPurchase);
-            await user.save();
-    
-            return res.status(200).json({"code": 200, "message": "ok", "response": newAssetPurchase})
-    
+            })
+           
         } catch (e){
             return next(e)
         }
@@ -140,9 +174,13 @@ module.exports.assetPurchase = catchAsync(async(req, res, next) => {
 
 module.exports.refundGiven = catchAsync( async (req, res, next) => {
     try {
-        const { username } = req.session.currentUser;
-        const { customerID = null } = req.body;
-        const user = await User.findOne({username}).populate({
+        // const { username } = req.session.currentUser;
+        jwt.verify(req.token, 'secretkey', async(err, data) => {
+            if(err){
+                res.json({"code": 403, "message": "Auth Failed"})
+            } else {
+                const { customerID = null } = req.body;
+        const user = await User.findOne({username: data.user.username}).populate({
             path: 'money_out',
             populate: {
                 path: 'refund_given'
@@ -165,6 +203,9 @@ module.exports.refundGiven = catchAsync( async (req, res, next) => {
         await user.save();
 
         return res.status(200).json({"code": 200, "message": "ok", "response": newRefundGiven})
+            }
+        })
+        
 
     } catch (e){
         return next(e)
@@ -173,31 +214,39 @@ module.exports.refundGiven = catchAsync( async (req, res, next) => {
 
 module.exports.creditPurchase = catchAsync( async (req, res, next) => {
     try {
-        const { username } = req.session.currentUser;
-        const { customerID = null } = req.body;
-        const user = await User.findOne({username}).populate({
-            path: 'money_out',
-            populate: {
-                path: 'credit_purchase'
-            }
-        }).populate('customer');
+        // const { username } = req.session.currentUser;
 
-        let currentCustomer;
-        if(customerID){
-            for(let customer of user.customer){
-                if(customer.id === customerID){
-                    currentCustomer = customer;
+        jwt.verify(req.token, 'secretkey', async(err, data) => {
+            if(err){
+                res.json({"code": 403, "message": "Auth Failed"})
+            } else {
+                const { customerID = null } = req.body;
+                const user = await User.findOne({username: data.user.username}).populate({
+                    path: 'money_out',
+                    populate: {
+                        path: 'credit_purchase'
+                    }
+                }).populate('customer');
+        
+                let currentCustomer;
+                if(customerID){
+                    for(let customer of user.customer){
+                        if(customer.id === customerID){
+                            currentCustomer = customer;
+                        }
+                    }
                 }
+        
+                const newCreditPurchase = new RefundGiven({...req.body});
+                currentCustomer ? newCreditPurchase.customer.push(currentCustomer) : null
+                await newCreditPurchase.save();
+                user.money_out.credit_purchase.push(newCreditPurchase);
+                await user.save();
+        
+                return res.status(200).json({"code": 200, "message": "ok", "response": newCreditPurchase})
             }
-        }
-
-        const newCreditPurchase = new RefundGiven({...req.body});
-        currentCustomer ? newCreditPurchase.customer.push(currentCustomer) : null
-        await newCreditPurchase.save();
-        user.money_out.credit_purchase.push(newCreditPurchase);
-        await user.save();
-
-        return res.status(200).json({"code": 200, "message": "ok", "response": newCreditPurchase})
+        })
+       
 
     } catch (e){
         return next(e)
@@ -208,9 +257,13 @@ module.exports.creditPurchase = catchAsync( async (req, res, next) => {
 
 module.exports.otherTransaction = catchAsync(async(req, res, next) => {
     try {
-        const { username } = req.session.currentUser;
-        const { supplierID = null } = req.body;
-        const user = await User.findOne({username}).populate({
+        // const { username } = req.session.currentUser;
+        jwt.verify(req.token, 'secretkey', async(err, data) => {
+            if(err){
+                res.json({"code": 403, "message": "Auth Failed"})
+            } else {
+                const { supplierID = null } = req.body;
+        const user = await User.findOne({username: data.user.username}).populate({
             path: 'money_out',
             populate: {
                 path: 'other_transaction'
@@ -234,6 +287,9 @@ module.exports.otherTransaction = catchAsync(async(req, res, next) => {
 
         return res.status(200).json({"code": 200, "message": "ok", "response": newOtherTransaction})
 
+            }
+        })
+        
     } catch (e){
         return next(e)
     }

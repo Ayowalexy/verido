@@ -11,6 +11,7 @@ const CLIENT_ID = process.env.CLIENT_ID
 const CLIENT_SECRET = process.env.CLIENT_SECRET;
 const REDIRECT_URL = process.env.REDIRECT_URL;
 const REFRESH_TOKEN = process.env.REFRESH_TOKEN;
+const jwt = require('jsonwebtoken')
 if(process.env.NODE_ENV !== "production"){
     require('dotenv').config()
 }
@@ -192,6 +193,8 @@ module.exports.veridoDB = catchAsync(async(req, res, next) => {
             user.database = result.data.webContentLink;
 
             await user.save();
+
+            
             return res.status(200).json({"code": 200, "status": "Ok", "message": "user details", "response": user})
 
         }
@@ -214,12 +217,25 @@ module.exports.register = catchAsync(async(req, res, next) => {
         bcrypt.hash(1234, 12, function(err, hash) {
             token = hash;
         })
-        const { full_name, email, username, password, organization_id } = req.body;
+        const { full_name = '', email = '', username, password, organization_id = '' } = req.body;
 
-        const emailUser = await User.findOne({email})
+        let emailUser;
+        let org_id;
+
+        if(email !== ''){
+            emailUser = await User.findOne({email : email})
+        }
+        console.log(emailUser, 'emailuser')
+        if(organization_id !== ''){
+            org_id = await User.findOne({organization_id : organization_id})
+        }
+        console.log(org_id, 'org_id')
 
         if(emailUser){
             return res.status(401).json({"code": 401, "status": "Duplicate", "message": `${emailUser.email} is already registered`})
+        }
+        if(org_id){
+            return res.status(401).json({"code": 401, "status": "Duplicate", "message": `${org_id.organization_id} is already registered`})
         }
 
         const dateJoined = new Date();
@@ -245,7 +261,18 @@ module.exports.register = catchAsync(async(req, res, next) => {
         await newBusiness.save()
 
         await newSubcription.save()
-        const user = new User({full_name, username, email, database: "", phoneVerified: true, photoUrl: path, dateJoined: dateJoined.toDateString(), organization_id, token})
+        const user = new User(
+            {full_name: null,
+             username, 
+             email: null,
+            organization_id: null, 
+            database: null, 
+            phoneVerified: true,
+             photoUrl: path ? path : null, 
+             dateJoined: dateJoined.toDateString(),
+              token: null,
+
+        })
         user.subscription_status = newSubcription;
         user.business = newBusiness
         const newUser = await User.register(user, password)
@@ -370,7 +397,7 @@ module.exports.register = catchAsync(async(req, res, next) => {
 
         req.login(newUser, e => {
             if(e) return next(e)
-            res.json({"code": 200, "status": "success", "message": `Successfully registered ${user.full_name}`, "response": Founduser})
+            res.json({"code": 200, "status": "success", "message": `Successfully registered ${username}`, "response": Founduser})
             //res.redirect('/login')
         })
     } catch(e){
@@ -518,9 +545,14 @@ module.exports.login =  async (req, res, next) => {
         .populate('business')
         .populate('subscription_status')
         .populate('database')
+        .populate('token')
         
+        jwt.sign({user}, 'secretkey', (err, token) => {
+            user.token = token;
+            user.save();
+            return res.status(200).json({"code": 200, "status": "Ok", "message": "Welcome", "response": user})   
+        })
        
-        return res.status(200).json({"code": 200, "status": "Ok", "message": "Money in transactions for product sale, refund, and other transactions", "response": user})
     }
     
        // return res.json({"code": 200, "status": "success", "message": `Welcome ${user.full_name}`})
@@ -539,28 +571,36 @@ module.exports.sendVerification = catchAsync(async (req, res, next) => {
         
 
        try {
-            const { salt } = req.params;
+            // const { salt } = req.params;
 
 
-            phoneNumber.push({phone: req.body.phoneNumber, salt: salt});
+            // phoneNumber.push({phone: req.body.phoneNumber, salt: salt});
 
-            const user = await User.findOne({username: phoneNumber})
-            //userMap.push({username: phoneNumber, salt: num})
-            if(!user){
-                return res.status(403).json({"code": 403, "status": "Authorised", "message": `User with ${phoneNumber} is not registered`})
-            }
-
-            foundUser = user
+            jwt.sign({user: req.body.phoneNumber}, 'secretkey', async (err, token) => {
+                if(err){
+                    res.json({"code": 403, "message": "Auth Failed"})
+                } else {
+                    const user = await User.findOne({username: req.body.phoneNumber})
+                    console.log(user)
+                    if(user == null){
+                        return res.status(403).json({"code": 403, "status": "Authorised", "message": `User with ${req.body.phoneNumber} is not registered`})
+                    }
+        
+                    twilio.verify.services(process.env.VERIFICATION_SID)
+                    .verifications
+                    .create({to: req.body.phoneNumber, channel: 'sms'})
+                    .then(verification => res.status(200).json({"code": 200, "verification token": token, "status": "Ok", "message": `${verification.status}`}))
+                    .catch(e => {
+                        next(e)
+                        res.status(500).send(e);
+                    });
+                }
+            })
+           
+           
 
             
-            twilio.verify.services(process.env.VERIFICATION_SID)
-            .verifications
-            .create({to: req.body.phoneNumber, channel: 'sms'})
-            .then(verification => res.status(200).json({"code": 200, "status": "Ok", "message": `${verification.status}`}))
-            .catch(e => {
-                next(e)
-                res.status(500).send(e);
-            });
+           
        } catch (e){
            next(e)
        }
@@ -569,26 +609,36 @@ module.exports.sendVerification = catchAsync(async (req, res, next) => {
 module.exports.verifyOTP =  catchAsync(async (req, res, next) => {
 
     try {
-        const { otp } = req.body; 
-        const { salt } = req.params
-         
-        let number = phoneNumber.find(data => {
-            if(data.salt ===  salt){
-                return data.phone
+
+        jwt.verify(req.token, 'secretkey', async(err, data) => {
+            if(err){
+                res.json({"code": 403, "message": "Auth Failed"})
+            } else {
+                const { otp } = req.body; 
+                // const { salt } = req.params
+                console.log(data)
+                 
+                // let number = phoneNumber.find(data => {
+                //     if(data.salt ===  salt){
+                //         return data.phone
+                //     }
+                // })
+                // console.log(phoneNumber, '======')
+                // console.log(number,'===')
+                const check = await twilio.verify.services(process.env.VERIFICATION_SID)
+                    .verificationChecks
+                    // .create({to: number.phone, code: otp})
+                    .create({to: data.user, code: otp})
+                    .then(verification => res.status(200).json({"code": 200, "status": "Ok", "message": `${verification.status}`}))
+                    .catch(e => {
+                        next(e)
+                        res.status(500).send(e);
+                    });
+                
+                res.status(200).send(check);
             }
         })
-        console.log(phoneNumber, '======')
-        console.log(number,'===')
-        const check = await twilio.verify.services(process.env.VERIFICATION_SID)
-            .verificationChecks
-            .create({to: number.phone, code: otp})
-            .then(verification => res.status(200).json({"code": 200, "status": "Ok", "message": `${verification.status}`}))
-            .catch(e => {
-                next(e)
-                res.status(500).send(e);
-            });
-        
-        res.status(200).send(check);
+       
     } catch (e){
         next(e)
     }
