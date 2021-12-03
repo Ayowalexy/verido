@@ -34,170 +34,179 @@ const drive = google.drive({
 })
 
 module.exports.veridoDB = catchAsync(async(req, res, next) => {
-    console.log(req.file)
-    
-
-      const { mimetype, originalname, filename, path } = req.file
-      const { username } = req.session.currentUser;
-
+  
     try {
-        
-        const response =  await drive.files.create({
-            requestBody: {
-                name: filename,
-                mimeType: mimetype
-            },
-            media: {
-                mimeType: mimetype,
-                body: fs.createReadStream(path)
-            }
-        })
 
-        console.log(response.data)
+        console.log(req.file)
+    
 
-        if(Object.keys(response.data).length){
-            const fileID = response.data.id;
-            await drive.permissions.create({
-                fileId: fileID,
+        const { mimetype, originalname, filename, path } = req.file
+      //   const { username } = req.session.currentUser;
+  
+      jwt.verify(req.token, 'secretkey', async(err, data) => {
+          if(err){
+              res.json({"code": 403, "message": "Auth Failed"})
+          } else {
+            const response =  await drive.files.create({
                 requestBody: {
-                    role: 'reader',
-                    type: 'anyone'
+                    name: filename,
+                    mimeType: mimetype
+                },
+                media: {
+                    mimeType: mimetype,
+                    body: fs.createReadStream(path)
                 }
             })
     
-            const result = await drive.files.get({
-                fileId: fileID,
-                fields: 'webViewLink, webContentLink'
-            })
+            console.log(response.data)
     
-            console.log(result.data.webContentLink)
-            const user = await User.findOne({username}).populate({
-                path: 'product',
-                populate: {
-                    path: 'sale'
-                }
-            }).populate({
-                path: 'product',
-                populate: {
-                    path: 'credit_sale'
-                }
-            })
-            .populate('customer')
-            .populate('suppliers')
-            .populate({
-                path: 'money_in',
-                populate: {
-                    path: 'other_transaction',
-                    populate: {
-                        path: 'customer'
+            if(Object.keys(response.data).length){
+                const fileID = response.data.id;
+                await drive.permissions.create({
+                    fileId: fileID,
+                    requestBody: {
+                        role: 'reader',
+                        type: 'anyone'
                     }
-                }
-            })
-            .populate({
-                path: 'money_in',
-                populate: {
-                    path: 'refund',
+                })
+        
+                const result = await drive.files.get({
+                    fileId: fileID,
+                    fields: 'webViewLink, webContentLink'
+                })
+        
+                console.log(result.data.webContentLink)
+                const user = await User.findOne({username: data.user.username}).populate({
+                    path: 'product',
                     populate: {
-                        path: 'supplier'
+                        path: 'sale'
                     }
-                }
-            })
-            .populate({
-                path: 'money_in',
-                populate: {
-                    path: 'material_assign',
-                }
-            })
-            .populate({
-                path: 'money_in',
-                populate: {
-                    path: 'labour_assign',
-                }
-            })
-            .populate({
-                path: 'money_out',
-                populate: {
-                    path: 'direct_material_purchase',
+                }).populate({
+                    path: 'product',
                     populate: {
-                        path: 'supplier'
+                        path: 'credit_sale'
                     }
-                }
-            })
-            .populate({
-                path: 'money_out',
-                populate: {
-                    path: 'credit_purchase',
+                })
+                .populate('customer')
+                .populate('suppliers')
+                .populate({
+                    path: 'money_in',
                     populate: {
-                        path: 'customer'
+                        path: 'other_transaction',
+                        populate: {
+                            path: 'customer'
+                        }
                     }
-                }
-            })
-            .populate({
-                path: 'money_out',
-                populate: {
-                    path: 'refund_given',
+                })
+                .populate({
+                    path: 'money_in',
                     populate: {
-                        path: 'customer'
+                        path: 'refund',
+                        populate: {
+                            path: 'supplier'
+                        }
                     }
-                }
-            })
-            .populate({
-                path: 'money_out',
-                populate: {
-                    path: 'direct_labour',
+                })
+                .populate({
+                    path: 'money_in',
                     populate: {
-                        path: 'supplier'
+                        path: 'material_assign',
                     }
-                }
-            })
-            .populate({
-                path: 'money_out',
-                populate: {
-                    path: 'asset_purchase',
+                })
+                .populate({
+                    path: 'money_in',
                     populate: {
-                        path: 'supplier'
+                        path: 'labour_assign',
                     }
-                }
-            })
-            .populate({
-                path: 'money_out',
-                populate: {
-                    path: 'overhead',
+                })
+                .populate({
+                    path: 'money_out',
                     populate: {
-                        path: 'supplier'
+                        path: 'direct_material_purchase',
+                        populate: {
+                            path: 'supplier'
+                        }
                     }
-                }
-            })
-            .populate({
-                path: 'money_out',
-                populate: {
-                    path: 'other_transaction',
+                })
+                .populate({
+                    path: 'money_out',
                     populate: {
-                        path: 'supplier'
+                        path: 'credit_purchase',
+                        populate: {
+                            path: 'customer'
+                        }
                     }
-                }
-            })
-            .populate({
-                path: 'money_out',
-                populate: {
-                    path: 'materials',
-                }
-            }).populate('token')
-            .populate('business')
-            .populate('subscription_status')
-            .populate('database')
-
-            
-
-            
-            user.database = result.data.webContentLink;
-
-            await user.save();
-
-            
-            return res.status(200).json({"code": 200, "status": "Ok", "message": "user details", "response": user})
-
-        }
+                })
+                .populate({
+                    path: 'money_out',
+                    populate: {
+                        path: 'refund_given',
+                        populate: {
+                            path: 'customer'
+                        }
+                    }
+                })
+                .populate({
+                    path: 'money_out',
+                    populate: {
+                        path: 'direct_labour',
+                        populate: {
+                            path: 'supplier'
+                        }
+                    }
+                })
+                .populate({
+                    path: 'money_out',
+                    populate: {
+                        path: 'asset_purchase',
+                        populate: {
+                            path: 'supplier'
+                        }
+                    }
+                })
+                .populate({
+                    path: 'money_out',
+                    populate: {
+                        path: 'overhead',
+                        populate: {
+                            path: 'supplier'
+                        }
+                    }
+                })
+                .populate({
+                    path: 'money_out',
+                    populate: {
+                        path: 'other_transaction',
+                        populate: {
+                            path: 'supplier'
+                        }
+                    }
+                })
+                .populate({
+                    path: 'money_out',
+                    populate: {
+                        path: 'materials',
+                    }
+                }).populate('token')
+                .populate('business')
+                .populate('subscription_status')
+                .populate('database')
+    
+                
+    
+                
+                user.database = result.data.webContentLink;
+    
+                await user.save();
+    
+                
+                return res.status(200).json({"code": 200, "status": "Ok", "message": "user details", "response": user})
+    
+            }
+          }
+      })
+        
+       
     } catch (e){
         console.log(e.message)
     }
@@ -217,16 +226,16 @@ module.exports.register = catchAsync(async(req, res, next) => {
         bcrypt.hash(1234, 12, function(err, hash) {
             token = hash;
         })
-        const { full_name = '', email = '', username, password, organization_id = '' } = req.body;
+        const { full_name = null, email = null, username, password, organization_id = null } = req.body;
 
         let emailUser;
         let org_id;
 
-        if(email !== ''){
+        if(email !== null){
             emailUser = await User.findOne({email : email})
         }
         console.log(emailUser, 'emailuser')
-        if(organization_id !== ''){
+        if(organization_id !== null){
             org_id = await User.findOne({organization_id : organization_id})
         }
         console.log(org_id, 'org_id')
@@ -262,12 +271,12 @@ module.exports.register = catchAsync(async(req, res, next) => {
 
         await newSubcription.save()
         const user = new User(
-            {full_name: null,
+            {full_name,
              username, 
-             email: null,
-            organization_id: null, 
+             email,
+            organization_id, 
             database: null, 
-            phoneVerified: true,
+            phoneVerified: false,
              photoUrl: path ? path : null, 
              dateJoined: dateJoined.toDateString(),
               token: null,
@@ -615,6 +624,7 @@ module.exports.verifyOTP =  catchAsync(async (req, res, next) => {
                 res.json({"code": 403, "message": "Auth Failed"})
             } else {
                 const { otp } = req.body; 
+                let returnUser;
                 // const { salt } = req.params
                 console.log(data)
                  
@@ -629,7 +639,132 @@ module.exports.verifyOTP =  catchAsync(async (req, res, next) => {
                     .verificationChecks
                     // .create({to: number.phone, code: otp})
                     .create({to: data.user, code: otp})
-                    .then(verification => res.status(200).json({"code": 200, "status": "Ok", "message": `${verification.status}`}))
+                    .then(verification => {
+                        if(verification.status == 'approved'){
+                            const user = await User.findOne({username: data.user.username})
+                            .populate({
+                                path: 'product',
+                                populate: {
+                                    path: 'sale'
+                                }
+                            }).populate({
+                                path: 'product',
+                                populate: {
+                                    path: 'credit_sale'
+                                }
+                            })
+                            .populate('customer')
+                            .populate('suppliers')
+                            .populate({
+                                path: 'money_in',
+                                populate: {
+                                    path: 'other_transaction',
+                                    populate: {
+                                        path: 'customer'
+                                    }
+                                }
+                            })
+                            .populate({
+                                path: 'money_in',
+                                populate: {
+                                    path: 'refund',
+                                    populate: {
+                                        path: 'supplier'
+                                    }
+                                }
+                            })
+                            .populate({
+                                path: 'money_in',
+                                populate: {
+                                    path: 'material_assign',
+                                }
+                            })
+                            .populate({
+                                path: 'money_in',
+                                populate: {
+                                    path: 'labour_assign',
+                                }
+                            })
+                            .populate({
+                                path: 'money_out',
+                                populate: {
+                                    path: 'direct_material_purchase',
+                                    populate: {
+                                        path: 'supplier'
+                                    }
+                                }
+                            })
+                            .populate({
+                                path: 'money_out',
+                                populate: {
+                                    path: 'credit_purchase',
+                                    populate: {
+                                        path: 'customer'
+                                    }
+                                }
+                            })
+                            .populate({
+                                path: 'money_out',
+                                populate: {
+                                    path: 'refund_given',
+                                    populate: {
+                                        path: 'customer'
+                                    }
+                                }
+                            })
+                            .populate({
+                                path: 'money_out',
+                                populate: {
+                                    path: 'direct_labour',
+                                    populate: {
+                                        path: 'supplier'
+                                    }
+                                }
+                            })
+                            .populate({
+                                path: 'money_out',
+                                populate: {
+                                    path: 'asset_purchase',
+                                    populate: {
+                                        path: 'supplier'
+                                    }
+                                }
+                            })
+                            .populate({
+                                path: 'money_out',
+                                populate: {
+                                    path: 'overhead',
+                                    populate: {
+                                        path: 'supplier'
+                                    }
+                                }
+                            })
+                            .populate({
+                                path: 'money_out',
+                                populate: {
+                                    path: 'other_transaction',
+                                    populate: {
+                                        path: 'supplier'
+                                    }
+                                }
+                            })
+                            .populate({
+                                path: 'money_out',
+                                populate: {
+                                    path: 'materials',
+                                }
+                            }).populate('token')
+                            .populate('business')
+                            .populate('subscription_status')
+                            .populate('database')
+                            .populate('token')
+
+                            user.phoneVerified = true
+                            await user.save()
+                            returnUser = user
+                        }
+                        res.status(200).json({"code": 200, "status": "Ok", "message": `${verification.status}`, "user": returnUser})
+                    })
                     .catch(e => {
                         next(e)
                         res.status(500).send(e);

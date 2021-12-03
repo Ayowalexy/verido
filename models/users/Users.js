@@ -7,6 +7,7 @@ const Credit = require('../money-out/Credit_purchase')
 const userSchema = new mongoose.Schema({
     full_name: {
         type: String,
+        required: true
     },
     token: String,
     photoUrl: String,

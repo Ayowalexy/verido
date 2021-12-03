@@ -31,6 +31,7 @@ const verifyToken = require('./authenticate')
 const jwt = require('jsonwebtoken')
 const multer = require('multer')
 const {storage} = require('./cloudinary/index')
+const cloudinary = require('cloudinary').v2
 const upload = multer({ storage })
 
 const KEYPATH = ''
@@ -57,7 +58,7 @@ const DATABASE = process.env.DATABASE
 
 const DB = `mongodb+srv://seinde4:${PASSWORD}@cluster0.pp8yv.mongodb.net/${DATABASE}?retryWrites=true&w=majority` || 'mongodb://localhost:27017/verido';
 
-mongoose.connect(DB,
+mongoose.connect('mongodb://localhost:27017/verido',
     {    
     useNewUrlParser: true,
     useUnifiedTopology: true,
@@ -886,15 +887,33 @@ app.get('/user', verifyToken, catchAsync(async (req, res, next) => {
     }
 }))
 
+function uploader(req, res, next){
+    if(req.body.image){
+        upload.single(req.body.image)
+    }
+    next()
+}
 
-app.post('/update-profile', verifyToken, upload.single('display-picture'), catchAsync(async(req, res, next) => {
+app.post('/update-profile', verifyToken, catchAsync(async(req, res, next) => {
     try {
         jwt.verify(req.token, 'secretkey', async(err, data) => {
             if(err){
                 res.json({"code": 403, "message" : "Auth Failed"})
             }else {
-                 const { path } = req.file || ''
-                    //console.log(req.file)
+
+                 const {image = null} = req.body;
+                 let pathUrl;
+                 await cloudinary.uploader.upload(`data:image/jpg;base64,${image}`, {
+                    folder: 'Verido'
+                 }, function(err, result) {
+                        pathUrl = result.url
+                })
+
+
+
+                
+                 
+                   
 
                 // const profile = await  User.findOneAndUpdate(data.user.username
                 const profile = await  User.findOne({username: data.user.username}
@@ -1020,9 +1039,12 @@ app.post('/update-profile', verifyToken, upload.single('display-picture'), catch
                 .populate('subscription_status')
                 .populate('database')
 
-                profile.full_name = req.body.full_name ? req.body.full_name : data.user.username.full_name,
-                 profile.email = req.body.email ? req.body.email : data.user.username.email,
-                profile.photoUrl = req.file.path ? path : data.user.username.photoUrl
+                const { full_name = null, email = null } = req.body;
+                
+                
+                profile.full_name = full_name === null ? profile.full_name  :  req.body.full_name;
+                 profile.email = email === null ? profile.email :  req.body.email;
+                profile.photoUrl = pathUrl ? pathUrl : profile.photoUrl;
                 await profile.save()
                
 
