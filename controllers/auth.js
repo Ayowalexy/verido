@@ -639,7 +639,7 @@ module.exports.verifyOTP =  catchAsync(async (req, res, next) => {
                     .verificationChecks
                     // .create({to: number.phone, code: otp})
                     .create({to: data.user, code: otp})
-                    .then(verification => {
+                    .then( async (verification) => {
                         if(verification.status == 'approved'){
                             const user = await User.findOne({username: data.user.username})
                             .populate({
