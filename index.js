@@ -910,8 +910,7 @@ app.post('/update-profile', verifyToken, catchAsync(async(req, res, next) => {
                     await cloudinary.uploader.upload(`data:image/jpg;base64,${image}`, {
 
                  
-                 if(image !== null){
-                         await cloudinary.uploader.upload(`data:image/jpg;base64,${image}`, {
+                 
 
                         folder: 'Verido'
                      }, function(err, result) {
