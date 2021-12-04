@@ -634,7 +634,6 @@ module.exports.verifyOTP =  catchAsync(async (req, res, next) => {
                     .verificationChecks
                     // .create({to: number.phone, code: otp})
                     .create({to: data.user, code: otp})
-<<<<<<< HEAD
                     .then(async (verification) =>  {
                         if(verification.status === 'approved'){
                             returnUser = await User.findOne({username: data.user})
