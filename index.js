@@ -917,8 +917,6 @@ app.post('/update-profile', verifyToken, catchAsync(async(req, res, next) => {
                          if(err){
                              console.log(err)
 
-                         } else {
-
                          }else {
 
                             pathUrl = result.url
