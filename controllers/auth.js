@@ -285,9 +285,13 @@ module.exports.register = catchAsync(async(req, res, next) => {
         })
         user.subscription_status = newSubcription;
         user.business = newBusiness
-        const newUser = await User.register(user, password)
-
-
+        // const newUser = await User.register(user, password)
+        
+        await bcrypt.hash(password, 12).then(function(hash){
+            user.password = hash
+        })
+        await user.save()
+        
         const Founduser = await User.findOne({username}).populate({
             path: 'product',
             populate: {
@@ -405,7 +409,7 @@ module.exports.register = catchAsync(async(req, res, next) => {
         .populate('database')
 
 
-        req.login(newUser, e => {
+        req.login(user, e => {
             if(e) return next(e)
             res.json({"code": 200, "status": "success", "message": `Successfully registered ${username}`, "response": Founduser})
             //res.redirect('/login')
@@ -434,136 +438,154 @@ module.exports.login =  async (req, res, next) => {
     try {
 
         
-        const { username } = req.body;
-    const user = await User.findOne({username})
+        const { username, password } = req.body;
+    const user = await User.findOne({username}).populate({
+        path: 'product',
+        populate: {
+            path: 'sale'
+        }
+    }).populate({
+        path: 'product',
+        populate: {
+            path: 'credit_sale'
+        }
+    })
+    .populate('customer')
+    .populate('suppliers')
+    .populate({
+        path: 'money_in',
+        populate: {
+            path: 'other_transaction',
+            populate: {
+                path: 'customer'
+            }
+        }
+    })
+    .populate({
+        path: 'money_in',
+        populate: {
+            path: 'refund',
+            populate: {
+                path: 'supplier'
+            }
+        }
+    })
+    .populate({
+        path: 'money_in',
+        populate: {
+            path: 'material_assign',
+        }
+    })
+    .populate({
+        path: 'money_in',
+        populate: {
+            path: 'labour_assign',
+        }
+    })
+    .populate({
+        path: 'money_out',
+        populate: {
+            path: 'direct_material_purchase',
+            populate: {
+                path: 'supplier'
+            }
+        }
+    })
+    .populate({
+        path: 'money_out',
+        populate: {
+            path: 'credit_purchase',
+            populate: {
+                path: 'customer'
+            }
+        }
+    })
+    .populate({
+        path: 'money_out',
+        populate: {
+            path: 'refund_given',
+            populate: {
+                path: 'customer'
+            }
+        }
+    })
+    .populate({
+        path: 'money_out',
+        populate: {
+            path: 'direct_labour',
+            populate: {
+                path: 'supplier'
+            }
+        }
+    })
+    .populate({
+        path: 'money_out',
+        populate: {
+            path: 'asset_purchase',
+            populate: {
+                path: 'supplier'
+            }
+        }
+    })
+    .populate({
+        path: 'money_out',
+        populate: {
+            path: 'overhead',
+            populate: {
+                path: 'supplier'
+            }
+        }
+    })
+    .populate({
+        path: 'money_out',
+        populate: {
+            path: 'other_transaction',
+            populate: {
+                path: 'supplier'
+            }
+        }
+    })
+    .populate({
+        path: 'money_out',
+        populate: {
+            path: 'materials',
+        }
+    }).populate('token')
+    .populate('business')
+    .populate('subscription_status')
+    .populate('database')
+    .populate('token')
+
+if(user !== null){
+    await bcrypt.compare(password, user.password).then(function(result){
+        switch(result){
+            case true: 
+                jwt.sign({user}, 'secretkey', (err, token) => {
+                    user.token = token;
+                    user.save();
+                    return res.status(200).json({"code": 200, "status": "Ok", "message": "Welcome", "response": user})   
+                })
+                break;
+            case false: 
+                return res.status(200).json({"code": 403, "status": "Failed", "message": "Username or password is incorrect"})   
+                break;
+
+            default: 
+                return res.status(200).json({"code": 403, "status": "Failed", "message": "Username or password is incorrect"})   
+                break;
+        }
+    })
+}
     req.session.currentUser = req.body;
-    if(user){
+
+    //if(user){
        // const { username } = req.session.currentUser;
         // const { id } = req.user;       
-        const user = await User.findOne({username}).populate({
-            path: 'product',
-            populate: {
-                path: 'sale'
-            }
-        }).populate({
-            path: 'product',
-            populate: {
-                path: 'credit_sale'
-            }
-        })
-        .populate('customer')
-        .populate('suppliers')
-        .populate({
-            path: 'money_in',
-            populate: {
-                path: 'other_transaction',
-                populate: {
-                    path: 'customer'
-                }
-            }
-        })
-        .populate({
-            path: 'money_in',
-            populate: {
-                path: 'refund',
-                populate: {
-                    path: 'supplier'
-                }
-            }
-        })
-        .populate({
-            path: 'money_in',
-            populate: {
-                path: 'material_assign',
-            }
-        })
-        .populate({
-            path: 'money_in',
-            populate: {
-                path: 'labour_assign',
-            }
-        })
-        .populate({
-            path: 'money_out',
-            populate: {
-                path: 'direct_material_purchase',
-                populate: {
-                    path: 'supplier'
-                }
-            }
-        })
-        .populate({
-            path: 'money_out',
-            populate: {
-                path: 'credit_purchase',
-                populate: {
-                    path: 'customer'
-                }
-            }
-        })
-        .populate({
-            path: 'money_out',
-            populate: {
-                path: 'refund_given',
-                populate: {
-                    path: 'customer'
-                }
-            }
-        })
-        .populate({
-            path: 'money_out',
-            populate: {
-                path: 'direct_labour',
-                populate: {
-                    path: 'supplier'
-                }
-            }
-        })
-        .populate({
-            path: 'money_out',
-            populate: {
-                path: 'asset_purchase',
-                populate: {
-                    path: 'supplier'
-                }
-            }
-        })
-        .populate({
-            path: 'money_out',
-            populate: {
-                path: 'overhead',
-                populate: {
-                    path: 'supplier'
-                }
-            }
-        })
-        .populate({
-            path: 'money_out',
-            populate: {
-                path: 'other_transaction',
-                populate: {
-                    path: 'supplier'
-                }
-            }
-        })
-        .populate({
-            path: 'money_out',
-            populate: {
-                path: 'materials',
-            }
-        }).populate('token')
-        .populate('business')
-        .populate('subscription_status')
-        .populate('database')
-        .populate('token')
+        //const user = await User.findOne({username})
         
-        jwt.sign({user}, 'secretkey', (err, token) => {
-            user.token = token;
-            user.save();
-            return res.status(200).json({"code": 200, "status": "Ok", "message": "Welcome", "response": user})   
-        })
        
-    }
+       
+   // }
     
        // return res.json({"code": 200, "status": "success", "message": `Welcome ${user.full_name}`})
     } catch (e){

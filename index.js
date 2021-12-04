@@ -23,6 +23,7 @@ const Supplier = require('./models/users/Supplier')
 const MoneyOutRoutes = require('./routes/money-out')
 const MoneyInRoutes = require('./routes/money-in')
 const AuthRoutes = require('./routes/auth')
+const passwordRoutes = require('./routes/password')
 const Business = require('./models/users/Business')
 const path = require('path')
 const fs = require('fs')
@@ -58,7 +59,7 @@ const DATABASE = process.env.DATABASE
 
 const DB = `mongodb+srv://seinde4:${PASSWORD}@cluster0.pp8yv.mongodb.net/${DATABASE}?retryWrites=true&w=majority` || 'mongodb://localhost:27017/verido';
 
-mongoose.connect(DB,
+mongoose.connect('mongodb://localhost:27017/verido',
     {    
     useNewUrlParser: true,
     useUnifiedTopology: true,
@@ -96,6 +97,7 @@ app.get('/', (req, res) => {
 app.use('/money-out', verifyToken, MoneyOutRoutes)
 app.use('/money-in', verifyToken, MoneyInRoutes)
 app.use(AuthRoutes)
+app.use(passwordRoutes)
 
 
 
@@ -903,15 +905,17 @@ app.post('/update-profile', verifyToken, catchAsync(async(req, res, next) => {
 
                  const {image = null} = req.body;
                  let pathUrl;
-                 await cloudinary.uploader.upload(`data:image/jpg;base64,${image}`, {
-                    folder: 'Verido'
-                 }, function(err, result) {
-                     if(err){
-                         console.log(err)
-                     } else {
-                        pathUrl = result.url
-                     }
-                })
+                 if(image !== null){
+                    await cloudinary.uploader.upload(`data:image/jpg;base64,${image}`, {
+                        folder: 'Verido'
+                     }, function(err, result) {
+                         if(err){
+                             console.log(err)
+                         } else {
+                            pathUrl = result.url
+                         }
+                    })
+                 }
 
 
 
