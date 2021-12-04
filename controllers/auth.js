@@ -641,7 +641,7 @@ module.exports.verifyOTP =  catchAsync(async (req, res, next) => {
                     .create({to: data.user, code: otp})
                     .then( async (verification) => {
                         if(verification.status == 'approved'){
-                            const user = await User.findOne({username: data.user.username})
+                            const user = await User.findOne({username: data.user})
                             .populate({
                                 path: 'product',
                                 populate: {
