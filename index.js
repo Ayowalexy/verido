@@ -903,16 +903,18 @@ app.post('/update-profile', verifyToken, catchAsync(async(req, res, next) => {
 
                  const {image = null} = req.body;
                  let pathUrl;
-                 await cloudinary.uploader.upload(`data:image/jpg;base64,${image}`, {
-                    folder: 'Verido'
-                 }, function(err, result) {
-                     if(err){
-                         console.log(err)
-                     }else {
-                        pathUrl = result.url
-                     }
-                })
-
+                 
+                 if(image !== null){
+                         await cloudinary.uploader.upload(`data:image/jpg;base64,${image}`, {
+                        folder: 'Verido'
+                     }, function(err, result) {
+                         if(err){
+                             console.log(err)
+                         }else {
+                            pathUrl = result.url
+                         }
+                    })
+                 }
 
 
                 
