@@ -905,35 +905,28 @@ app.post('/update-profile', verifyToken, catchAsync(async(req, res, next) => {
 
                  const {image = null} = req.body;
                  let pathUrl;
-<<<<<<< HEAD
+
                  if(image !== null){
                     await cloudinary.uploader.upload(`data:image/jpg;base64,${image}`, {
-=======
+
                  
                  if(image !== null){
                          await cloudinary.uploader.upload(`data:image/jpg;base64,${image}`, {
->>>>>>> a5ac2b1cbc0b22b16d11dc6b630158fa8e8bfc17
+
                         folder: 'Verido'
                      }, function(err, result) {
                          if(err){
                              console.log(err)
-<<<<<<< HEAD
+
                          } else {
-=======
+
                          }else {
->>>>>>> a5ac2b1cbc0b22b16d11dc6b630158fa8e8bfc17
+
                             pathUrl = result.url
                          }
                     })
                  }
-<<<<<<< HEAD
-
-=======
->>>>>>> a5ac2b1cbc0b22b16d11dc6b630158fa8e8bfc17
-
-
-                
-                 
+    
                    
 
                 // const profile = await  User.findOneAndUpdate(data.user.username
