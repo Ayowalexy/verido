@@ -634,6 +634,7 @@ module.exports.verifyOTP =  catchAsync(async (req, res, next) => {
                     .verificationChecks
                     // .create({to: number.phone, code: otp})
                     .create({to: data.user, code: otp})
+<<<<<<< HEAD
                     .then(async (verification) =>  {
                         if(verification.status === 'approved'){
                             returnUser = await User.findOne({username: data.user})
@@ -760,6 +761,9 @@ module.exports.verifyOTP =  catchAsync(async (req, res, next) => {
                         }
                         res.status(200).json({"code": 200, "status": "Ok", "message": `${verification.status}`, "user": returnUser})
                     })
+=======
+                    .then(verification => res.status(200).json({"code": 200, "status": "Ok", "message": `${verification.status}`}))
+>>>>>>> e3b9ac766db0000ed16e28949091f3ebc6dceb03
                     .catch(e => {
                         next(e)
                         res.status(500).send(e);
