@@ -41,6 +41,7 @@ module.exports.veridoDB = catchAsync(async(req, res, next) => {
     
 
         const { mimetype, originalname, filename, path } = req.file
+        // const { mimetype = 'application/x-sqlite3', originalname, filename, path } = req.body
       //   const { username } = req.session.currentUser;
   
       jwt.verify(req.token, 'secretkey', async(err, data) => {
@@ -229,23 +230,23 @@ module.exports.register = catchAsync(async(req, res, next) => {
         const { full_name = null, email = null, username, password, organization_id = null } = req.body;
 
         let emailUser;
-        let org_id;
+        // let org_id;
 
         if(email !== null){
             emailUser = await User.findOne({email : email})
         }
-        console.log(emailUser, 'emailuser')
-        if(organization_id !== null){
-            org_id = await User.findOne({organization_id : organization_id})
-        }
-        console.log(org_id, 'org_id')
+        // console.log(emailUser, 'emailuser')
+        // if(organization_id !== null){
+        //     org_id = await User.findOne({organization_id : organization_id})
+        // }
+        // console.log(org_id, 'org_id')
 
         if(emailUser){
             return res.status(401).json({"code": 401, "status": "Duplicate", "message": `${emailUser.email} is already registered`})
         }
-        if(org_id){
-            return res.status(401).json({"code": 401, "status": "Duplicate", "message": `${org_id.organization_id} is already registered`})
-        }
+        // if(org_id){
+        //     return res.status(401).json({"code": 401, "status": "Duplicate", "message": `${org_id.organization_id} is already registered`})
+        // }
 
         const dateJoined = new Date();
         let date = new Date()
@@ -628,20 +629,14 @@ module.exports.verifyOTP =  catchAsync(async (req, res, next) => {
                 // const { salt } = req.params
                 console.log(data)
                  
-                // let number = phoneNumber.find(data => {
-                //     if(data.salt ===  salt){
-                //         return data.phone
-                //     }
-                // })
-                // console.log(phoneNumber, '======')
-                // console.log(number,'===')
+                
                 const check = await twilio.verify.services(process.env.VERIFICATION_SID)
                     .verificationChecks
                     // .create({to: number.phone, code: otp})
                     .create({to: data.user, code: otp})
-                    .then( async (verification) => {
-                        if(verification.status == 'approved'){
-                            const user = await User.findOne({username: data.user.username})
+                    .then(async (verification) =>  {
+                        if(verification.status === 'approved'){
+                            returnUser = await User.findOne({username: data.user})
                             .populate({
                                 path: 'product',
                                 populate: {
@@ -759,9 +754,9 @@ module.exports.verifyOTP =  catchAsync(async (req, res, next) => {
                             .populate('database')
                             .populate('token')
 
-                            user.phoneVerified = true
-                            await user.save()
-                            returnUser = user
+                            returnUser.phoneVerified = true;
+                            returnUser.full_name = returnUser.full_name;
+                            await returnUser.save()
                         }
                         res.status(200).json({"code": 200, "status": "Ok", "message": `${verification.status}`, "user": returnUser})
                     })
