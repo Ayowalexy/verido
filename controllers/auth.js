@@ -231,9 +231,12 @@ module.exports.register = catchAsync(async(req, res, next) => {
 
         let emailUser;
         // let org_id;
-
+        let exits;
         if(email !== null){
             emailUser = await User.findOne({email : email})
+        }
+        if(username !== null){
+            exits = await User.findOne({username : username})
         }
         // console.log(emailUser, 'emailuser')
         // if(organization_id !== null){
@@ -243,6 +246,9 @@ module.exports.register = catchAsync(async(req, res, next) => {
 
         if(emailUser){
             return res.status(401).json({"code": 401, "status": "Duplicate", "message": `${emailUser.email} is already registered`})
+        }
+         if(exits){
+            return res.status(401).json({"code": 401, "status": "Duplicate", "message": `${exits.username} is already registered`})
         }
         // if(org_id){
         //     return res.status(401).json({"code": 401, "status": "Duplicate", "message": `${org_id.organization_id} is already registered`})
