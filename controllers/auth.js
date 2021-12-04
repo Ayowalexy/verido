@@ -639,8 +639,7 @@ module.exports.verifyOTP =  catchAsync(async (req, res, next) => {
                     .verificationChecks
                     // .create({to: number.phone, code: otp})
                     .create({to: data.user, code: otp})
-                    .then(verification => res.status(200).json({"code": 200, "status": "Ok", "message": `${verification.status}`})
-                    })
+                    .then(verification => res.status(200).json({"code": 200, "status": "Ok", "message": `${verification.status}`}))
                     .catch(e => {
                         next(e)
                         res.status(500).send(e);
