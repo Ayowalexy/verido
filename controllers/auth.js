@@ -77,7 +77,7 @@ module.exports.veridoDB = catchAsync(async(req, res, next) => {
                 })
         
                 console.log(result.data.webContentLink)
-                const user = await User.findOne({username: data.user.username}).populate({
+                const user = await User.findOne({username: data.user}).populate({
                     path: 'product',
                     populate: {
                         path: 'sale'
@@ -566,7 +566,7 @@ if(user !== null){
     await bcrypt.compare(password, user.password).then(function(result){
         switch(result){
             case true: 
-                jwt.sign({user}, 'secretkey', (err, token) => {
+                jwt.sign({user: user.username}, 'secretkey', (err, token) => {
                     user.token = token;
                     user.save();
                     return res.status(200).json({"code": 200, "status": "Ok", "message": "Welcome", "response": user})   
