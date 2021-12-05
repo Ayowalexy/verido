@@ -19,7 +19,7 @@ module.exports.directMaterialPurchase = catchAsync( async(req, res, next ) => {
 
         // const { username } = req.session.currentUser;
 
-        const user = await User.findOne({username: data.user.username}).populate({
+        const user = await User.findOne({username: data.user}).populate({
             path: 'money_out',
             populate: {
                 path: 'direct_material_purchase'
@@ -59,7 +59,7 @@ module.exports.directLabourPurchase = catchAsync( async (req, res, next) => {
             } else {
                 const { supplierID = null } = req.body;
 
-        const user = await User.findOne({username: data.user.username}).populate({
+        const user = await User.findOne({username: data.user}).populate({
             path: 'money_out',
             populate: {
                 path: 'direct_labour'
@@ -100,7 +100,7 @@ module.exports.overhead = catchAsync( async(req, res, next) => {
             } else {
                  // const { username } = req.session.currentUser;
         const { supplierID = null } = req.body;
-        const user = await User.findOne({username: data.user.username}).populate({
+        const user = await User.findOne({username: data.user}).populate({
             path: 'money_out',
             populate: {
                 path: 'overhead'
@@ -140,7 +140,7 @@ module.exports.assetPurchase = catchAsync(async(req, res, next) => {
                     res.json({"code": 403, "message": "Auth Failed"})
                 } else {
                     const { supplierID = null } = req.body;
-                    const user = await User.findOne({username: data.user.username}).populate({
+                    const user = await User.findOne({username: data.user}).populate({
                         path: 'money_out',
                         populate: {
                             path: 'asset_purchase'
@@ -180,7 +180,7 @@ module.exports.refundGiven = catchAsync( async (req, res, next) => {
                 res.json({"code": 403, "message": "Auth Failed"})
             } else {
                 const { customerID = null } = req.body;
-        const user = await User.findOne({username: data.user.username}).populate({
+        const user = await User.findOne({username: data.user}).populate({
             path: 'money_out',
             populate: {
                 path: 'refund_given'
@@ -221,7 +221,7 @@ module.exports.creditPurchase = catchAsync( async (req, res, next) => {
                 res.json({"code": 403, "message": "Auth Failed"})
             } else {
                 const { customerID = null } = req.body;
-                const user = await User.findOne({username: data.user.username}).populate({
+                const user = await User.findOne({username: data.user}).populate({
                     path: 'money_out',
                     populate: {
                         path: 'credit_purchase'
@@ -263,7 +263,7 @@ module.exports.otherTransaction = catchAsync(async(req, res, next) => {
                 res.json({"code": 403, "message": "Auth Failed"})
             } else {
                 const { supplierID = null } = req.body;
-        const user = await User.findOne({username: data.user.username}).populate({
+        const user = await User.findOne({username: data.user}).populate({
             path: 'money_out',
             populate: {
                 path: 'other_transaction'
