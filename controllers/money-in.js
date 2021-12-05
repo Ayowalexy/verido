@@ -21,7 +21,7 @@ module.exports.addProduct =  catchAsync(async (req, res, next) => {
             res.json({"code": 403, "message": "Auth Failed"})
         } else {
             const { product } = req.body;
-        const user = await User.findOne({username: data.user.username}).populate('product')
+        const user = await User.findOne({username: data.user}).populate('product')
          console.log(user.product)
        if(user.product.length){
          for(let userProduct of user.product ){
@@ -60,7 +60,7 @@ module.exports.addMaterial = catchAsync(async (req, res, next) => {
                 res.json({"code": 403, "message": "Auth Failed"})
             } else {
                 const { material } = req.body;
-                    const user = await User.findOne({username: data.user.username}).populate({
+                    const user = await User.findOne({username: data.user}).populate({
                         path: 'money_in',
                         populate: {
                             path: 'material_assign'
@@ -106,7 +106,7 @@ module.exports.addMaterial = catchAsync(async (req, res, next) => {
                 res.json({"code": 403, "message": "Auth Failed"})
             } else {
                 const { title } = req.body;
-                const user = await User.findOne({username: data.user.username}).populate({
+                const user = await User.findOne({username: data.user}).populate({
                     path: 'money_in',
                     populate: {
                         path: 'labour_assign'
@@ -152,7 +152,7 @@ module.exports.addMaterial = catchAsync(async (req, res, next) => {
                 res.json({"code": 403, "message": "Auth Failed"})
             } else {
                 const { productID, supplierID } = req.body;
-                const user = await User.findOne({username: data.user.username}).populate({
+                const user = await User.findOne({username: data.user}).populate({
                     path: 'money_in',
                     populate: {
                         path: 'refund'
@@ -194,7 +194,7 @@ module.exports.creditSale = catchAsync(async(req, res, next) => {
                 const { productID, customerID } = req.body;
 
 
-        const user = await User.findOne({username: data.user.username})
+        const user = await User.findOne({username: data.user})
                             .populate('customer')
                             .populate('product');
         const { product } = user;
@@ -239,7 +239,7 @@ module.exports.otherTransaction = catchAsync( async(req, res, next) => {
             } else {
                 const { customerID = null } = req.body;
 
-        const user = await User.findOne({username: data.user.username})
+        const user = await User.findOne({username: data.user})
                             .populate({
                                 path: 'money_in',
                                 populate: {
