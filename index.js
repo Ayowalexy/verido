@@ -108,7 +108,7 @@ app.get('/fetch-all-product',verifyToken, (req, res, next) => {
             } else {
                 console.log(data.user.username)
 
-                const user = await User.findOne({username: data.user.username})
+                const user = await User.findOne({username: data.user})
                 .populate({
                     path: 'product',
                     populate: {
@@ -135,7 +135,7 @@ app.post('/fetch-single-product', verifyToken, catchAsync(async (req, res, next)
                 // const { username } = req.session.currentUser;
 
         const { product } = req.body;
-        const user = await User.findOne({username: data.user.username}).populate('product');
+        const user = await User.findOne({username: data.user}).populate('product');
         let singleProductFound;
 
         for(let userProduct of user.product){
@@ -170,7 +170,7 @@ app.delete('/delete-single-product/:_id',verifyToken, catchAsync( async(req, res
                     // const { id } = req.
                     // const { username } = req.session.currentUser;
                     
-                    const user = await User.findOne({username: data.user.username}).populate('product');
+                    const user = await User.findOne({username: data.user}).populate('product');
                     for(let element of user.product){
                         if(element.id === _id){
                             await Product.findByIdAndDelete(_id);
@@ -198,7 +198,7 @@ app.patch('/update-single-product/:_id', verifyToken, catchAsync(async(req, res,
                     // const { id } = req.user;
                     // const { username } = req.session.currentUser;
                     
-                    const user = await User.findOne({username: data.user.username}).populate('product');
+                    const user = await User.findOne({username: data.user}).populate('product');
                     for(let element of user.product){
                         if(element.id === _id){
                             await Product.findOneAndUpdate(_id, {...req.body})
@@ -224,7 +224,7 @@ app.get('/fetch-materials', verifyToken, catchAsync(async (req, res, next) => {
             if(err){
                 res.json({"code": 403, "message": "Auth failed"})
             } else {
-                const user = await User.findOne({username: data.user.username})
+                const user = await User.findOne({username: data.user})
                 .populate({
                     path: 'money_in',
                     populate: {
@@ -255,7 +255,7 @@ app.post('/new-sale/:_id', verifyToken, catchAsync(async (req, res, next) => {
             if(err){
                 res.json({"code": 200, "message": "Auth Failed"})
             } else {
-                const user = await User.findOne({username: data.user.username}).populate({
+                const user = await User.findOne({username: data.user}).populate({
                     path: 'product',
                     populate: {
                         path: 'sale'
@@ -294,7 +294,7 @@ app.get('/get-all-customers', verifyToken, catchAsync(async (req, res, next) => 
             if(err){
                 res.json({"code": 400, "message": "Auth Failed"})
             } else {
-                const user = await User.findOne({username: data.user.username}).populate('customer');
+                const user = await User.findOne({username: data.user}).populate('customer');
         const { customer } = user;
         return res.status(200).json({"code": 200, "status": "success", "message": `All customers`, "response": customer})
             }
@@ -315,7 +315,7 @@ app.post('/add-new-customer', verifyToken, catchAsync(async(req, res, next) => {
             if(err){
                 res.json({"code": 403, "message": "Auth Failed"})
             } else {
-                const user = await User.findOne({username: data.user.username})
+                const user = await User.findOne({username: data.user})
                 const newCustomer = new Customer({...req.body});
                 await newCustomer.save();
                 user.customer.push(newCustomer);
@@ -337,7 +337,7 @@ app.get('/fetch-all-transactions', verifyToken, catchAsync(async(req, res, next)
             if(err){
                 res.json({"code": 403, "message": 'Auth Failed'})
             } else {
-                const user = await User.findOne({username: data.user.username}).populate({
+                const user = await User.findOne({username: data.user}).populate({
                     path: 'product',
                     populate: {
                         path: 'sale'
@@ -468,7 +468,7 @@ app.post('/add-new-supplier', verifyToken, catchAsync( async( req, res, next) =>
         if(err){
             res.json({"code": 200, "message": "Auth Failed"})
         } else {
-            const user = await User.findOne({username: data.user.username}).populate({
+            const user = await User.findOne({username: data.user}).populate({
                 path: 'product',
                 populate: {
                     path: 'sale'
@@ -607,7 +607,7 @@ app.post('/business-information',verifyToken, catchAsync( async(req, res, next) 
             if(err){
                 res.json({"code": 403, "message": "Auth Failed"})
             } else {
-                const user = await User.findOne({username: data.user.username}).populate({
+                const user = await User.findOne({username: data.user}).populate({
                     path: 'product',
                     populate: {
                         path: 'sale'
@@ -744,7 +744,7 @@ app.get('/get-business-information', verifyToken, catchAsync(async(req, res, nex
             if(err){
                 res.json({"code": 403, "message": "Auth Failed"})
             } else {
-                const user = await User.findOne({username: data.user.username}).populate('business')
+                const user = await User.findOne({username: data.user}).populate('business')
                 return res.status(200).json({"code": 200, "status": "Ok", "message": "Business information", "response": user.business})
             }
         })
@@ -762,7 +762,7 @@ app.get('/user', verifyToken, catchAsync(async (req, res, next) => {
             if(err){
                 res.json({"code": 403, "message": "Auth Failed"})
             } else {
-                const user = await User.findOne({username: data.user.username}).populate({
+                const user = await User.findOne({username: data.user}).populate({
                     path: 'product',
                     populate: {
                         path: 'sale'
@@ -926,7 +926,7 @@ app.post('/update-profile', verifyToken, catchAsync(async(req, res, next) => {
                    
 
                 // const profile = await  User.findOneAndUpdate(data.user.username
-                const profile = await  User.findOne({username: data.user.username}
+                const profile = await  User.findOne({username: data.user}
                     //, 
                     // {full_name: req.body.full_name ? req.body.full_name : data.user.username.full_name,
                     // email: req.body.email ? req.body.email : data.user.username.email,
