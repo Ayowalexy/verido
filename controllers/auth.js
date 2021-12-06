@@ -77,7 +77,8 @@ module.exports.veridoDB = catchAsync(async(req, res, next) => {
                 })
         
                 console.log(result.data.webContentLink)
-                const user = await User.findOne({username: data.user}).populate({
+                await User.findOneAndUpdate({username: data.user},{database: result.data.webContentLink})
+                const user = await User.findOne({username:data.user}).populate({
                     path: 'product',
                     populate: {
                         path: 'sale'
@@ -196,9 +197,9 @@ module.exports.veridoDB = catchAsync(async(req, res, next) => {
                 
     
                 
-                user.database = result.data.webContentLink;
+               // user.database = result.data.webContentLink;
     
-                await user.save();
+               // await user.save();
     
                 
                 return res.status(200).json({"code": 200, "status": "Ok", "message": "user details", "response": user})
