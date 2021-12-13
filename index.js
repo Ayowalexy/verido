@@ -6,6 +6,7 @@ const app = express()
 const mongoose = require('mongoose')
 const bodyParser = require('body-parser')
 const User = require('./models/users/Users')
+const cors = require('cors')
 const bcrypt = require('bcrypt')
 const catchAsync = require('./utils/catchAsync')
 const ExpressError = require('./utils/expressError')
@@ -21,6 +22,7 @@ const Customer = require('./models/users/Customers')
 const Supplier = require('./models/users/Supplier')
 const MoneyOutRoutes = require('./routes/money-out')
 const MoneyInRoutes = require('./routes/money-in')
+const AdminRoutes = require('./routes/admin')
 const AuthRoutes = require('./routes/auth')
 const passwordRoutes = require('./routes/password')
 const Business = require('./models/users/Business')
@@ -75,7 +77,7 @@ db.once('open', () => {
 
 
 app.use(session(sessionConfig))
-
+app.use(cors())
 app.use(express.json())
 app.use(bodyParser())
 app.use(log('dev'))
@@ -97,6 +99,7 @@ app.use('/money-out', verifyToken, MoneyOutRoutes)
 app.use('/money-in', verifyToken, MoneyInRoutes)
 app.use(AuthRoutes)
 app.use(passwordRoutes)
+app.use(AdminRoutes)
 
 
 
