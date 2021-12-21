@@ -11,4 +11,6 @@ router.post('/admin-reset-password', Admin.resetPassword)
 
 router.post('/admin-password-update', Admin.passwordUpdate)
 
+router.get('/admin-business',  Admin.business)
+
 module.exports = router

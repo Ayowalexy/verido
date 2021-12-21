@@ -109,3 +109,20 @@ module.exports.passwordUpdate = catchAsync(async (req, res, next) => {
     next(e)
   }
 })
+
+module.exports.business = catchAsync(async( req, res, next) => {
+  // try {
+  //     jwt.verify(req.token, 'secretkey', async function (err, data){
+  //       if(err){
+        //   console.log('Failed Auth')
+        //   res.status(403).json({"code": 403, "message": 'Auth failed'})
+        // } else {
+          const users = await User.find().populate('business').populate('subscription_status')
+
+          res.status(200).json({"code": 200, "response": users})
+  //       }
+  //     })
+  // } catch(e) {
+  //   next(e)
+  // }
+})
