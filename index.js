@@ -111,6 +111,8 @@ app.post('/payment', (req, res) => {
         payment_method_types: ['card'],
     });
 
+    res.send(paymentIntent)
+
 })
 
 const endpointSecret = "whsec_bGQ3BuM9QbMRjYFX954Ueob2YgOdf8zQ";
@@ -127,6 +129,19 @@ app.post('/webhook', express.raw({type: 'application/json'}), (request, response
     return;
   }
 
+  switch (event.type) {
+    case 'charge.succeeded':
+      const charge = event.data.object;
+      // Then define and call a function to handle the event charge.succeeded
+      break;
+    case 'payment_intent.succeeded':
+      const paymentIntent = event.data.object;
+      // Then define and call a function to handle the event payment_intent.succeeded
+      break;
+    // ... handle other event types
+    default:
+      console.log(`Unhandled event type ${event.type}`);
+  }
   // Handle the event
   console.log(`Unhandled event type ${event.type}`);
 
