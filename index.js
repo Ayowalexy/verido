@@ -79,7 +79,16 @@ db.once('open', () => {
 app.use(session(sessionConfig))
 app.use(cors())
 app.use(express.json())
-app.use(bodyParser())
+app.use(
+    bodyParser.json({
+      verify: (request, response, buf) => {
+        const url = request.originalUrl;
+        if (url.startsWith('/webhook')) {
+          request.rawBody = buf.toString();
+        }
+      }
+    })
+  );
 app.use(log('dev'))
 app.use(userRoles.middleware())
 app.use(express.urlencoded({extended: true}))
@@ -145,7 +154,7 @@ app.post('/webhook', express.raw({type: 'application/json'}), (request, response
   let event;
 
   try {
-    event = stripe.webhooks.constructEvent(request.body, sig, endpointSecret);
+    event = stripe.webhooks.constructEvent(request.rawBody, sig, endpointSecret);
   } catch (err) {
     response.status(400).send(`Webhook Error: ${err.message}`);
     return;
