@@ -35,7 +35,7 @@ const multer = require('multer')
 const {storage} = require('./cloudinary/index')
 const cloudinary = require('cloudinary').v2
 const upload = multer({ storage })
-
+const stripe = require('stripe')('sk_test_51JOpfuAASrRVh8zA23fbIuEFZcrxn9iuaUAt7lEa6t3oGImJu1EcgYll34LjzbWGCgzoRmldWsFnte4mZil3uMIh002RJnpQiQ');
 const KEYPATH = ''
 const SCOPE = ['https://www.googleapis.com/auth/drive']
 
@@ -60,7 +60,7 @@ const DATABASE = process.env.DATABASE
 
 const DB = `mongodb+srv://seinde4:${PASSWORD}@cluster0.pp8yv.mongodb.net/${DATABASE}?retryWrites=true&w=majority` || 'mongodb://localhost:27017/verido';
 
-mongoose.connect(DB,
+mongoose.connect('mongodb://localhost:27017/verido',
     {    
     useNewUrlParser: true,
     useUnifiedTopology: true,
@@ -100,6 +100,39 @@ app.use('/money-in', verifyToken, MoneyInRoutes)
 app.use(AuthRoutes)
 app.use(passwordRoutes)
 app.use(AdminRoutes)
+
+
+
+app.post('/payment', (req, res) => {
+
+    const paymentIntent = await stripe.paymentIntents.create({
+        amount: 1099,
+        currency: 'usd',
+        payment_method_types: ['card'],
+    });
+
+})
+
+const endpointSecret = "whsec_bGQ3BuM9QbMRjYFX954Ueob2YgOdf8zQ";
+
+app.post('/webhook', express.raw({type: 'application/json'}), (request, response) => {
+  const sig = request.headers['stripe-signature'];
+
+  let event;
+
+  try {
+    event = stripe.webhooks.constructEvent(request.body, sig, endpointSecret);
+  } catch (err) {
+    response.status(400).send(`Webhook Error: ${err.message}`);
+    return;
+  }
+
+  // Handle the event
+  console.log(`Unhandled event type ${event.type}`);
+
+  // Return a 200 response to acknowledge receipt of the event
+  response.send();
+});
 
 
 
