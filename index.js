@@ -103,15 +103,37 @@ app.use(AdminRoutes)
 
 
 
-app.post('/payment', (req, res) => {
+app.post('/payment', async (req, res, next) => {
 
-    const paymentIntent = await stripe.paymentIntents.create({
-        amount: 1099,
-        currency: 'usd',
-        payment_method_types: ['card'],
-    });
+    try {
+        const { plainID } = req.body;
+        let amount;
+        switch(plainID){
+            case 0:
+                amount = 799
+                break;
+            case 1:
+                amount = 2277
+                break;
+            case 2:
+                amount = 8150
+                break
+            default:
+                amount = 0
+        }
+        const paymentIntent = await stripe.paymentIntents.create({
+            amount: amount,
+            currency: 'usd',
+            payment_method_types: ['card'],
+        });
 
-    res.send(paymentIntent)
+
+        const { id, client_secret } = paymentIntent
+
+        res.status(200).json({"id": id, "client_secret": client_secret})
+    } catch (e){
+        return next(e)
+    }
 
 })
 
@@ -132,10 +154,13 @@ app.post('/webhook', express.raw({type: 'application/json'}), (request, response
   switch (event.type) {
     case 'charge.succeeded':
       const charge = event.data.object;
+      console.log(charge)
       // Then define and call a function to handle the event charge.succeeded
       break;
     case 'payment_intent.succeeded':
       const paymentIntent = event.data.object;
+      console.log(paymentIntent)
+
       // Then define and call a function to handle the event payment_intent.succeeded
       break;
     // ... handle other event types
