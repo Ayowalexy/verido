@@ -79,16 +79,7 @@ db.once('open', () => {
 app.use(session(sessionConfig))
 app.use(cors())
 app.use(express.json())
-app.use(
-    bodyParser.json({
-      verify: (request, response, buf) => {
-        const url = request.originalUrl;
-        if (url.startsWith('/webhook')) {
-          request.rawBody = buf.toString();
-        }
-      }
-    })
-  );
+// app.use(bodyParser())
 app.use(log('dev'))
 app.use(userRoles.middleware())
 app.use(express.urlencoded({extended: true}))
@@ -112,34 +103,52 @@ app.use(AdminRoutes)
 
 
 
-app.post('/payment', async (req, res, next) => {
+app.post('/payment',verifyToken, async (req, res, next) => {
 
     try {
-        const { plainID } = req.body;
-        let amount;
-        switch(plainID){
-            case 0:
-                amount = 799
-                break;
-            case 1:
-                amount = 2277
-                break;
-            case 2:
-                amount = 8150
-                break
-            default:
-                amount = 0
-        }
-        const paymentIntent = await stripe.paymentIntents.create({
-            amount: amount,
-            currency: 'usd',
-            payment_method_types: ['card'],
-        });
+        jwt.verify(req.token, 'secretkey', async function(err, data){
+            if(err){
+                res.status(401).json({"message": 'Auth Failed'})
+            } else {
+                const user = await User.findOne({username: data.user})
+                const customer = await stripe.customers.create({
+                    email: user.email ? user.email : null,
+                    phone: user.username,
+                    name: user.full_name
+                });
+
+                const { plainID } = req.body;
+                let amount;
+                switch(plainID){
+                    case 0:
+                        amount = 799
+                        break;
+                    case 1:
+                        amount = 2277
+                        break;
+                    case 2:
+                        amount = 8150
+                        break
+                    default:
+                        amount = 0
+                }
+
+                
+                const paymentIntent = await stripe.paymentIntents.create({
+                    amount: amount,
+                    currency: 'usd',
+                    payment_method_types: ['card'],
+                });
 
 
-        const { id, client_secret } = paymentIntent
+                const { id } = customer
+                const { client_secret } = paymentIntent
 
-        res.status(200).json({"id": id, "client_secret": client_secret})
+                res.status(200).json({"customer_id": id, "client_secret": client_secret})
+
+            }
+        })
+       
     } catch (e){
         return next(e)
     }
@@ -154,7 +163,7 @@ app.post('/webhook', express.raw({type: 'application/json'}), (request, response
   let event;
 
   try {
-    event = stripe.webhooks.constructEvent(request.rawBody, sig, endpointSecret);
+    event = stripe.webhooks.constructEvent(request.body, sig, endpointSecret);
   } catch (err) {
     response.status(400).send(`Webhook Error: ${err.message}`);
     return;
@@ -168,7 +177,7 @@ app.post('/webhook', express.raw({type: 'application/json'}), (request, response
       break;
     case 'payment_intent.succeeded':
       const paymentIntent = event.data.object;
-      console.log(paymentIntent)
+      console.log(event)
 
       // Then define and call a function to handle the event payment_intent.succeeded
       break;
