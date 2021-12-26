@@ -2,6 +2,9 @@
 const mongoose = require('mongoose')
 const passportLocalMongoose = require('passport-local-mongoose')
 const Credit = require('../money-out/Credit_purchase')
+const Institution = require('./Institution')
+const Video = require('./Videos')
+const UserID = require('./UserID')
 
 
 const userSchema = new mongoose.Schema({
@@ -9,6 +12,7 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    stripeCustomerID: String,
     token: String,
     photoUrl: String,
     dateJoined : {
@@ -22,6 +26,19 @@ const userSchema = new mongoose.Schema({
     email: {
         type: String,
     },
+    userID: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: UserID
+    },
+    videos: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: Video
+
+    }],
+    insitution: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: Institution,
+    }],
     database: String,
     username: {
         type: String,

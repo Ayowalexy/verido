@@ -15,6 +15,7 @@ router.get('/login', Auth.getLogin)
 // router.post('/login', passport.authenticate('local', {failureRedirect: '/login'}), Auth.login)
 router.post('/login', Auth.login)
 
+router.get('/digitail-ocean', Auth.digitalOcean)
 
 router.post('/send-verification', Auth.sendVerification)
 // router.post('/send-verification/:salt', Auth.sendVerification)

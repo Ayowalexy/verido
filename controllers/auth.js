@@ -12,9 +12,205 @@ const CLIENT_SECRET = process.env.CLIENT_SECRET;
 const REDIRECT_URL = process.env.REDIRECT_URL;
 const REFRESH_TOKEN = process.env.REFRESH_TOKEN;
 const jwt = require('jsonwebtoken')
+const Videos = require('../models/users/Videos')
+const userID = require('../models/users/UserID')
+const Institution = require('../models/users/Institution')
+const stripe = require('stripe')('sk_test_51JOpfuAASrRVh8zA23fbIuEFZcrxn9iuaUAt7lEa6t3oGImJu1EcgYll34LjzbWGCgzoRmldWsFnte4mZil3uMIh002RJnpQiQ');
 if(process.env.NODE_ENV !== "production"){
     require('dotenv').config()
 }
+
+const AWS = require('aws-sdk');
+
+
+module.exports.veridoDB = catchAsync(async (req, res, next) => {
+    try {
+        jwt.verify(req.token, 'secretkey', async function (err, data){
+            if(err){
+                res.json({"message": "Auth Failed"})
+            } else {
+                const spacesEndpoint = new AWS.Endpoint('sfo3.digitaloceanspaces.com');
+                const s3 = new AWS.S3({
+                    endpoint: spacesEndpoint,
+                    accessKeyId: process.env.SPACES_KEY, 
+                    secretAccessKey: process.env.SPACES_SECRET 
+                });
+        
+        
+                // var params = {
+                //     Bucket: "verido-space"
+                // };
+        
+                // s3.createBucket(params, function(err, data) {
+                //     if (err) console.log(err, err.stack);
+                //     else     console.log(data);
+                // });
+        
+                // s3.listBuckets({}, function(err, data) {
+                //     if (err) console.log(err, err.stack);
+                //     else {
+                //         data['Buckets'].forEach(function(space) {
+                //             console.log(space['Name']);
+                //         })
+                //     };
+                // });
+                const { mimetype, originalname, filename, path } = req.file
+        
+        
+                var params = {
+                    Bucket: "verido-space",
+                    Key: `${filename}.db`,
+                    Body: fs.createReadStream(path),
+                    ACL: "private",
+                    Metadata: {
+                                "x-amz-meta-my-key": "your-value"
+                            }
+                };
+        
+                s3.putObject(params, function(err, data) {
+                    if (err) {console.log(err, err.stack);}
+                    else     {console.log(data);}
+                });
+        
+                const expireSeconds = 600000000000
+        
+                const url = s3.getSignedUrl('getObject', {
+                    Bucket: 'verido-space',
+                    Key: `${filename}.db`,
+                    Expires: expireSeconds
+                });
+        
+                await User.findOneAndUpdate({username: data.user},{database: url})
+                        const user = await User.findOne({username:data.user}).populate({
+                            path: 'product',
+                            populate: {
+                                path: 'sale'
+                            }
+                        }).populate({
+                            path: 'product',
+                            populate: {
+                                path: 'credit_sale'
+                            }
+                        })
+                        .populate('customer')
+                        .populate('suppliers')
+                        .populate({
+                            path: 'money_in',
+                            populate: {
+                                path: 'other_transaction',
+                                populate: {
+                                    path: 'customer'
+                                }
+                            }
+                        })
+                        .populate({
+                            path: 'money_in',
+                            populate: {
+                                path: 'refund',
+                                populate: {
+                                    path: 'supplier'
+                                }
+                            }
+                        })
+                        .populate({
+                            path: 'money_in',
+                            populate: {
+                                path: 'material_assign',
+                            }
+                        })
+                        .populate({
+                            path: 'money_in',
+                            populate: {
+                                path: 'labour_assign',
+                            }
+                        })
+                        .populate({
+                            path: 'money_out',
+                            populate: {
+                                path: 'direct_material_purchase',
+                                populate: {
+                                    path: 'supplier'
+                                }
+                            }
+                        })
+                        .populate({
+                            path: 'money_out',
+                            populate: {
+                                path: 'credit_purchase',
+                                populate: {
+                                    path: 'customer'
+                                }
+                            }
+                        })
+                        .populate({
+                            path: 'money_out',
+                            populate: {
+                                path: 'refund_given',
+                                populate: {
+                                    path: 'customer'
+                                }
+                            }
+                        })
+                        .populate({
+                            path: 'money_out',
+                            populate: {
+                                path: 'direct_labour',
+                                populate: {
+                                    path: 'supplier'
+                                }
+                            }
+                        })
+                        .populate({
+                            path: 'money_out',
+                            populate: {
+                                path: 'asset_purchase',
+                                populate: {
+                                    path: 'supplier'
+                                }
+                            }
+                        })
+                        .populate({
+                            path: 'money_out',
+                            populate: {
+                                path: 'overhead',
+                                populate: {
+                                    path: 'supplier'
+                                }
+                            }
+                        })
+                        .populate({
+                            path: 'money_out',
+                            populate: {
+                                path: 'other_transaction',
+                                populate: {
+                                    path: 'supplier'
+                                }
+                            }
+                        })
+                        .populate({
+                            path: 'money_out',
+                            populate: {
+                                path: 'materials',
+                            }
+                        }).populate('token')
+                        .populate('business')
+                        .populate('subscription_status')
+                        .populate('database')
+            
+        
+                console.log(url);
+                return res.status(200).json({"code": 200, "status": "Ok", "message": "user details", "response": user})
+
+            }
+        })
+        
+
+    } catch(e){
+        return next(e)
+    }
+
+    res.send('success')
+})
 const { google } = require('googleapis')
 const path = require('path')
 const fs = require('fs');
@@ -33,7 +229,7 @@ const drive = google.drive({
     auth: oauthclient
 })
 
-module.exports.veridoDB = catchAsync(async(req, res, next) => {
+module.exports.digitalOcean = catchAsync(async(req, res, next) => {
   
     try {
 
@@ -193,6 +389,8 @@ module.exports.veridoDB = catchAsync(async(req, res, next) => {
                 .populate('business')
                 .populate('subscription_status')
                 .populate('database')
+                .populate('videos')
+                .populate('insitution')
     
                 
     
@@ -259,6 +457,18 @@ module.exports.register = catchAsync(async(req, res, next) => {
         let date = new Date()
         date.setDate(date.getDate() + 7)
 
+        const newInstitution = new Institution({
+            name: null,
+            email: null,
+            institutionShouldAccessData: null,
+            institutionShouldExportData: null
+        })
+
+        const newVideo = new Video({
+            vidoeID : 'SnEIJaPl008',
+            category: 'Tutorial'
+        })
+       
 
         const newSubcription = new Subscription({
             type: 'trial',
@@ -266,6 +476,7 @@ module.exports.register = catchAsync(async(req, res, next) => {
             started: dateJoined.toDateString(),
             expires: date.toDateString()
         })
+
 
         const newBusiness = new Business({
             name: null,
@@ -275,13 +486,24 @@ module.exports.register = catchAsync(async(req, res, next) => {
             currencySymbol : null
         })
 
+        await newVideo.save()
+
+        await newInstitution.save()
+
         await newBusiness.save()
 
         await newSubcription.save()
+
+        const customer = await stripe.customers.create({
+            email: email ? email : null,
+            phone: username,
+            name: full_name
+        });
         const user = new User(
             {full_name,
              username, 
              email,
+             stripeCustomerID: customer.id,
             organization_id, 
             database: null, 
             phoneVerified: false,
@@ -292,6 +514,8 @@ module.exports.register = catchAsync(async(req, res, next) => {
         })
         user.subscription_status = newSubcription;
         user.business = newBusiness
+        user.insitution.puhs(newInstitution)
+        user.videos.push(newVideo)
         // const newUser = await User.register(user, password)
         
         await bcrypt.hash(password, 12).then(function(hash){
@@ -562,6 +786,8 @@ module.exports.login =  async (req, res, next) => {
     .populate('subscription_status')
     .populate('database')
     .populate('token')
+    .populate('videos')
+    .populate('insitution')
 
 if(user !== null){
     await bcrypt.compare(password, user.password).then(function(result){

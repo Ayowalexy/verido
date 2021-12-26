@@ -78,8 +78,15 @@ db.once('open', () => {
 
 app.use(session(sessionConfig))
 app.use(cors())
-app.use(express.json())
+// app.use(express.json())
 // app.use(bodyParser())
+app.use((req, res, next) => {
+    if(req.originalUrl.includes('/webhook')){
+        next()
+    } else {
+        bodyParser()(req, res, next)
+    }
+})
 app.use(log('dev'))
 app.use(userRoles.middleware())
 app.use(express.urlencoded({extended: true}))
@@ -102,20 +109,48 @@ app.use(passwordRoutes)
 app.use(AdminRoutes)
 
 
+app.post('/stripe-account', async(req, res) => {
+    const users = await User.find();
+
+    for(let user of users){
+        const customer = await stripe.customers.create({
+            //email: user.email ? user.email : null,
+            phone: user.username,
+            name: user.full_name
+        });
+
+        await User.findOneAndUpdate({username: user.username}, { stripeCustomerID: customer.id})
+        // await user.save()
+    }
+
+    res.send('completed')
+})
+
 
 app.post('/payment',verifyToken, async (req, res, next) => {
 
     try {
-        jwt.verify(req.token, 'secretkey', async function(err, data){
+        jwt.verify(req.token, 'secretkey', async (err, data) => {
             if(err){
                 res.status(401).json({"message": 'Auth Failed'})
             } else {
                 const user = await User.findOne({username: data.user})
-                const customer = await stripe.customers.create({
-                    email: user.email ? user.email : null,
-                    phone: user.username,
-                    name: user.full_name
-                });
+                console.log(user, data.user)
+                let id;
+                if(typeof user.stripeCustomerID === null){
+                    const customer = await stripe.customers.create({
+                        email: user.email ? user.email : null,
+                        phone: user.username,
+                        name: user.full_name
+                    });
+
+                    await User.findOneAndUpdate({username: data.user}, {stripeCustomerID: customer.id})
+                    id = customer.id
+                } else {
+                    id = user.stripeCustomerID
+                }
+
+                
 
                 const { plainID } = req.body;
                 let amount;
@@ -141,7 +176,7 @@ app.post('/payment',verifyToken, async (req, res, next) => {
                 });
 
 
-                const { id } = customer
+                // const { id } = customer
                 const { client_secret } = paymentIntent
 
                 res.status(200).json({"customer_id": id, "client_secret": client_secret})
@@ -157,39 +192,63 @@ app.post('/payment',verifyToken, async (req, res, next) => {
 
 const endpointSecret = "whsec_bGQ3BuM9QbMRjYFX954Ueob2YgOdf8zQ";
 
-app.post('/webhook', express.raw({type: 'application/json'}), (request, response) => {
-  const sig = request.headers['stripe-signature'];
+app.post('/webhook', express.raw({type: 'application/json'}),  async (request, response) => {
 
-  let event;
+    try {
+   
+            const sig = request.headers['stripe-signature'];
 
-  try {
-    event = stripe.webhooks.constructEvent(request.body, sig, endpointSecret);
+            let event;
+            let date = new Date()
+
+            event = stripe.webhooks.constructEvent(request.body, sig, endpointSecret);
+            switch (event.type) {
+                case 'charge.succeeded':
+                const charge = event.data.object;
+                console.log(event)
+                break;
+                case 'payment_intent.succeeded':
+                const paymentIntent = event.data.object;
+
+                switch(event.data.object.amount_received){
+                    case 799:
+                        date.setDate(date.getDate() + 28)
+                        const user_1 = await User.findOne({stripeCustomerID: event.data.object.customer}).populate('subscription_status')
+                        user_1.subscription_status.expires = date.toDateString()
+                        await user_1.save()
+                        break;
+                    case 2277:
+                        date.setDate(date.getDate() + 112)
+                        const user_2 = await User.findOne({stripeCustomerID: event.data.object.customer}).populate('subscription_status')
+                        user_2.subscription_status.expires = date.toDateString()
+                        await user_2.save()
+                        break;
+                    case 8150:
+                        date.setDate(date.getDate() + 365)
+                        const user_3 = await User.findOne({stripeCustomerID: event.data.object.customer}).populate('subscription_status')
+                        user_3.subscription_status.expires = date.toDateString()
+                        await user_3.save()
+                        break
+                    default:
+                        console.log('Default')
+                        break;
+
+                }
+                console.log(event)
+                break;
+                default:
+                console.log(`Unhandled event type ${event.type}`);
+            }
+            response.send();
+        
+   
+ 
   } catch (err) {
     response.status(400).send(`Webhook Error: ${err.message}`);
     return;
   }
 
-  switch (event.type) {
-    case 'charge.succeeded':
-      const charge = event.data.object;
-      console.log(charge)
-      // Then define and call a function to handle the event charge.succeeded
-      break;
-    case 'payment_intent.succeeded':
-      const paymentIntent = event.data.object;
-      console.log(event)
-
-      // Then define and call a function to handle the event payment_intent.succeeded
-      break;
-    // ... handle other event types
-    default:
-      console.log(`Unhandled event type ${event.type}`);
-  }
-  // Handle the event
-  console.log(`Unhandled event type ${event.type}`);
-
-  // Return a 200 response to acknowledge receipt of the event
-  response.send();
+ 
 });
 
 
@@ -972,6 +1031,8 @@ app.get('/user', verifyToken, catchAsync(async (req, res, next) => {
                 .populate('business')
                 .populate('subscription_status')
                 .populate('database')
+                .populate('videos')
+                .populate('insitution')
                 return res.status(200).json({"code": 200, "status": "Ok", "message": "user", "response": user})
             }
         })
@@ -1142,6 +1203,8 @@ app.post('/update-profile', verifyToken, catchAsync(async(req, res, next) => {
                 .populate('business')
                 .populate('subscription_status')
                 .populate('database')
+                .populate('videos')
+                .populate('insitution')
 
                 const { full_name = null, email = null } = req.body;
                 
@@ -1157,6 +1220,23 @@ app.post('/update-profile', verifyToken, catchAsync(async(req, res, next) => {
             }
         })
     }catch (e){
+        return next(e)
+    }
+}))
+
+app.get('/institution', verifyToken, catchAsync(async (req, res, next) => {
+    try {
+
+        jwt.verify(req.token, 'secretkey', async ( err, data) => {
+            if(err){
+                return res.status(403).json({"code": "Auth Failed"})
+            } else {
+                const user = await User.findOne({username: data.user}).populate('insitution')
+                return res.status(200).json({"code": 200, "status": "Ok", "message": "user", "response": user})
+
+            }
+        })
+    } catch (e){
         return next(e)
     }
 }))
