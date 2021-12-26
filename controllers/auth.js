@@ -59,7 +59,7 @@ module.exports.veridoDB = catchAsync(async (req, res, next) => {
         
                 var params = {
                     Bucket: "verido-space",
-                    Key: `${filename}.db`,
+                    Key: `${originalname}.db`,
                     Body: fs.createReadStream(path),
                     ACL: "private",
                     Metadata: {
@@ -75,8 +75,8 @@ module.exports.veridoDB = catchAsync(async (req, res, next) => {
                 const expireSeconds = 600000000000
         
                 const url = s3.getSignedUrl('getObject', {
-                    Bucket: 'verido-space',
-                    Key: `${filename}.db`,
+                    Bucket: 'verido-files',
+                    Key: `${originalname}.db`,
                     Expires: expireSeconds
                 });
         
