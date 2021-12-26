@@ -61,13 +61,12 @@ const DATABASE = process.env.DATABASE
 
 const DB = `mongodb+srv://seinde4:${PASSWORD}@cluster0.pp8yv.mongodb.net/${DATABASE}?retryWrites=true&w=majority` || 'mongodb://localhost:27017/verido';
 
-mongoose.connect('mongodb://localhost:27017/verido',
+mongoose.connect(DB,
     {    
     useNewUrlParser: true,
     useUnifiedTopology: true,
     }
 )
-
 
 const db = mongoose.connection;
 db.on('error', console.error.bind(console, 'connection error'))
