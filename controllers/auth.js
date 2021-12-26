@@ -32,8 +32,8 @@ module.exports.veridoDB = catchAsync(async (req, res, next) => {
                 const spacesEndpoint = new AWS.Endpoint('sfo3.digitaloceanspaces.com');
                 const s3 = new AWS.S3({
                     endpoint: spacesEndpoint,
-                    accessKeyId: process.env.SPACES_KEY, 
-                    secretAccessKey: process.env.SPACES_SECRET 
+                    accessKeyId: '43HT5DWBCV3XA3LLQJM7' || process.env.SPACES_KEY, 
+                    secretAccessKey: 'A7gyjuwBizzk56luyeFYcyJDa/f0CO8Z+A9iK1CtrXA' || process.env.SPACES_SECRET 
                 });
         
         
