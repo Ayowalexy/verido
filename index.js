@@ -19,6 +19,7 @@ const session = require('express-session')
 const axios = require('axios')
 const Sale = require('./models/users/Sale');
 const Customer = require('./models/users/Customers')
+const Video = require('./models/users/Videos')
 const Supplier = require('./models/users/Supplier')
 const MoneyOutRoutes = require('./routes/money-out')
 const MoneyInRoutes = require('./routes/money-in')
@@ -60,7 +61,7 @@ const DATABASE = process.env.DATABASE
 
 const DB = `mongodb+srv://seinde4:${PASSWORD}@cluster0.pp8yv.mongodb.net/${DATABASE}?retryWrites=true&w=majority` || 'mongodb://localhost:27017/verido';
 
-mongoose.connect(DB,
+mongoose.connect('mongodb://localhost:27017/verido',
     {    
     useNewUrlParser: true,
     useUnifiedTopology: true,
@@ -1224,18 +1225,18 @@ app.post('/update-profile', verifyToken, catchAsync(async(req, res, next) => {
     }
 }))
 
-app.get('/institution', verifyToken, catchAsync(async (req, res, next) => {
+app.get('/vidoes', catchAsync(async (req, res, next) => {
     try {
 
-        jwt.verify(req.token, 'secretkey', async ( err, data) => {
-            if(err){
-                return res.status(403).json({"code": "Auth Failed"})
-            } else {
-                const user = await User.findOne({username: data.user}).populate('insitution')
-                return res.status(200).json({"code": 200, "status": "Ok", "message": "user", "response": user})
+        // const video = new Video({
+        //     vidoeID : 'SnEIJaPl008',
+        //     category : 'Tutorial Video'
+        // })
 
-            }
-        })
+        // await video.save();
+        const videos = await Video.find();
+        return res.status(200).json({"code": 200, "status": "Ok", "response": videos})
+
     } catch (e){
         return next(e)
     }
