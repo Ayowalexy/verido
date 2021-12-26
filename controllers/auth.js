@@ -58,8 +58,8 @@ module.exports.veridoDB = catchAsync(async (req, res, next) => {
         
         
                 var params = {
-                    Bucket: "verido-space",
-                    Key: `${originalname}.db`,
+                    Bucket: "verido-files",
+                    Key: `${originalname}`,
                     Body: fs.createReadStream(path),
                     ACL: "private",
                     Metadata: {
@@ -76,7 +76,7 @@ module.exports.veridoDB = catchAsync(async (req, res, next) => {
         
                 const url = s3.getSignedUrl('getObject', {
                     Bucket: 'verido-files',
-                    Key: `${originalname}.db`,
+                    Key: `${originalname}`,
                     Expires: expireSeconds
                 });
         
@@ -209,7 +209,7 @@ module.exports.veridoDB = catchAsync(async (req, res, next) => {
         return next(e)
     }
 
-    res.send('success')
+    // res.send('success')
 })
 const { google } = require('googleapis')
 const path = require('path')
