@@ -21,6 +21,9 @@ const Sale = require('./models/users/Sale');
 const Customer = require('./models/users/Customers')
 const Video = require('./models/users/Videos')
 const Supplier = require('./models/users/Supplier')
+const Subscription = require('./models/users/Subcription')
+
+const UserID = require('./models/users/UserID')
 const MoneyOutRoutes = require('./routes/money-out')
 const MoneyInRoutes = require('./routes/money-in')
 const AdminRoutes = require('./routes/admin')
@@ -109,22 +112,45 @@ app.use(passwordRoutes)
 app.use(AdminRoutes)
 
 
-app.post('/stripe-account', async(req, res) => {
-    const users = await User.find();
 
-    for(let user of users){
-        const customer = await stripe.customers.create({
-            //email: user.email ? user.email : null,
-            phone: user.username,
-            name: user.full_name
-        });
 
-        await User.findOneAndUpdate({username: user.username}, { stripeCustomerID: customer.id})
-        // await user.save()
+app.get('/user-verification', verifyToken, catchAsync( async( req, res, next) => {
+    try {
+        jwt.verify(req.token, 'secretkey', async(err, data) => {
+            if(err){
+                res.status(401).json({"message": "Auth Failed"})
+            } else {
+                const user = await User.findOne({username: data.user}).populate('userID')
+                const userid = await UserID.findOne({_id: user.userID})
+                res.status(200).json({"message": userid})
+            }
+        })
+    } catch(e){
+        return next(e)
     }
+}))
 
-    res.send('completed')
-})
+app.post('/user-verification', verifyToken, catchAsync( async( req, res, next) => {
+    try {
+        jwt.verify(req.token, 'secretkey', async(err, data) => {
+            if(err){
+                res.status(401).json({"message": "Auth Failed"})
+            } else {
+                const { BVN, NIN } = req.body;
+                const user = await User.findOne({username: data.user}).populate('userID')
+                const userid = await UserID.findOneAndUpdate({_id: user.userID}, {
+                    ...req.body
+                })
+                const newUserid = await UserID.findOne({_id: user.userID}) 
+
+                res.status(200).json({"message": newUserid})
+            }
+        })
+    } catch(e){
+        return next(e)
+    }
+}))
+
 
 
 app.post('/payment',verifyToken, async (req, res, next) => {
@@ -251,7 +277,48 @@ app.post('/webhook', express.raw({type: 'application/json'}),  async (request, r
  
 });
 
+app.post('/new-payment', verifyToken, catchAsync(async (req, res, next) => {
+    try {
+        jwt.verify(req.token, 'secretkey', async(err, data) => {
+            if(err){
+                return res.status(401).json({"message": "Auth Failed"})
+            } else {
+                const user = await User.findOne({username: data.user}).populate('subscription_status')
+                const { amount } = req.body;
+                let val;
+                let date = new Date();
+                let startDate = new Date();
+                switch(amount){
+                    case 799:
+                        val = 28;
+                        break;
+                    case 2277:
+                        val = 112;
+                        break;
+                    case 8150:
+                        val = 365
+                        break
+                    default:
+                        val = 0
+                        break
+                }
+                date.setDate(date.getDate() + val);
 
+                
+                const subs = await Subscription.findOneAndUpdate({_id: user.subscription_status.id}, {
+                    started: startDate.toDateString(),
+                    expires: date.toDateString()
+                })
+
+                const newSub = await Subscription.findOne({_id: user.subscription_status.id})
+                res.send(newSub)
+                
+            }
+        })
+    } catch(e){
+        return next(e)
+    }
+}))
 
 app.get('/fetch-all-product',verifyToken, (req, res, next) => {
   
@@ -1227,12 +1294,13 @@ app.post('/update-profile', verifyToken, catchAsync(async(req, res, next) => {
 app.get('/vidoes', catchAsync(async (req, res, next) => {
     try {
 
-        // const video = new Video({
-        //     vidoeID : 'SnEIJaPl008',
-        //     category : 'Tutorial Video'
-        // })
+        const video = new Video({
+            vidoeID : '0PbjZ01ObLA',
+            category : 'Tips',
+            title: 'Best advice for small Buiness Owners'
+        })
 
-        // await video.save();
+        await video.save();
         const videos = await Video.find();
         return res.status(200).json({"code": 200, "status": "Ok", "response": videos})
 

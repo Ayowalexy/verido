@@ -463,10 +463,11 @@ module.exports.register = catchAsync(async(req, res, next) => {
             institutionShouldAccessData: null,
             institutionShouldExportData: null
         })
-
+        
         const newVideo = new Video({
             vidoeID : 'SnEIJaPl008',
-            category: 'Tutorial'
+            category: 'Tutorial',
+            title: 'Best advice for small Business owners'
         })
        
 
@@ -514,7 +515,7 @@ module.exports.register = catchAsync(async(req, res, next) => {
         })
         user.subscription_status = newSubcription;
         user.business = newBusiness
-        user.insitution.puhs(newInstitution)
+        user.insitution.push(newInstitution)
         user.videos.push(newVideo)
         // const newUser = await User.register(user, password)
         

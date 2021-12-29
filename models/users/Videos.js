@@ -8,7 +8,8 @@ const videoSchema = new mongoose.Schema({
     category : {
             type: String,
             default: 'Tutorial Video'
-    }
+    },
+    title: String
 })
 
 module.exports = mongoose.model('videos', videoSchema)
