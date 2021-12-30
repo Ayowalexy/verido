@@ -121,7 +121,7 @@ app.get('/user-verification', verifyToken, catchAsync( async( req, res, next) =>
                 res.status(401).json({"message": "Auth Failed"})
             } else {
                 const user = await User.findOne({username: data.user}).populate('userID')
-                const userid = await UserID.findOne({_id: user.userID})
+                const userid = await UserID.findOne({_id: user.userID.id})
                 res.status(200).json({"message": userid})
             }
         })
@@ -138,10 +138,10 @@ app.post('/user-verification', verifyToken, catchAsync( async( req, res, next) =
             } else {
                 const { BVN, NIN } = req.body;
                 const user = await User.findOne({username: data.user}).populate('userID')
-                const userid = await UserID.findOneAndUpdate({_id: user.userID}, {
+                const userid = await UserID.findOneAndUpdate({_id: user.userID.id}, {
                     ...req.body
                 })
-                const newUserid = await UserID.findOne({_id: user.userID}) 
+                const newUserid = await UserID.findOne({_id: user.userID.id}) 
 
                 res.status(200).json({"message": newUserid})
             }
