@@ -303,12 +303,12 @@ app.post('/new-payment', verifyToken, catchAsync(async (req, res, next) => {
                         break
                 }
                 const d = new Date(user.subscription_status.expires)
-                d.setDate(date.getDate() + val);
+                d.setDate(d.getDate() + val);
 
                 
                 const subs = await Subscription.findOneAndUpdate({_id: user.subscription_status.id}, {
                     started: `${startDate.getMonth() + 1}/${startDate.getDate()}/${startDate.getFullYear()}`, //startDate.toDateString(), 
-                    expires: `${d.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`,//date.toDateString(),
+                    expires: `${d.getMonth() + 1}/${d.getDate()}/${d.getFullYear()}`,//date.toDateString(),
                     type: 'Subscribed'
                 })
 
