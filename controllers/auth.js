@@ -474,8 +474,8 @@ module.exports.register = catchAsync(async(req, res, next) => {
         const newSubcription = new Subscription({
             type: 'trial',
             status: true,
-            started: dateJoined.toDateString(),
-            expires: date.toDateString()
+            started: `${dateJoined.getMonth()+1}/${dateJoined.getDate()}/${dateJoined.getFullYear()}`,// dateJoined.toDateString(),
+            expires: `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`//date.toDateString()
         })
 
 
