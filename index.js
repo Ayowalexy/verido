@@ -64,7 +64,7 @@ const DATABASE = process.env.DATABASE
 
 const DB = `mongodb+srv://seinde4:${PASSWORD}@cluster0.pp8yv.mongodb.net/${DATABASE}?retryWrites=true&w=majority` || 'mongodb://localhost:27017/verido';
 
-mongoose.connect(DB,
+mongoose.connect('mongodb://localhost:27017/verido',
     {    
     useNewUrlParser: true,
     useUnifiedTopology: true,
@@ -306,8 +306,9 @@ app.post('/new-payment', verifyToken, catchAsync(async (req, res, next) => {
 
                 
                 const subs = await Subscription.findOneAndUpdate({_id: user.subscription_status.id}, {
-                    started: startDate.toDateString(),
-                    expires: date.toDateString()
+                    started: `${startDate.getDay()} | ${startDate.getMonth()} | ${startDate.getFullYear()}`, //startDate.toDateString(), 
+                    expires: `${date.getDay()} | ${date.getMonth()} | ${date.getFullYear()}`,//date.toDateString(),
+                    type: 'Subscribed'
                 })
 
                 const newSub = await Subscription.findOne({_id: user.subscription_status.id})

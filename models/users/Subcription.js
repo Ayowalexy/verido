@@ -3,7 +3,6 @@ const mongoose = require('mongoose')
 const subscriptionStatus = new mongoose.Schema({
     type : {
         type: String,
-        default: true
     },
     status : {
             type: Boolean,
