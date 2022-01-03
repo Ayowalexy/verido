@@ -65,7 +65,7 @@ const DATABASE = process.env.DATABASE
 
 const DB = `mongodb+srv://seinde4:${PASSWORD}@cluster0.pp8yv.mongodb.net/${DATABASE}?retryWrites=true&w=majority` || 'mongodb://localhost:27017/verido';
 
-mongoose.connect(DB,
+mongoose.connect('mongodb://localhost:27017/verido',
     {    
     useNewUrlParser: true,
     useUnifiedTopology: true,
@@ -148,6 +148,37 @@ app.post('/user-verification', verifyToken, catchAsync( async( req, res, next) =
             }
         })
     } catch(e){
+        return next(e)
+    }
+}))
+
+app.post('/admin-verification/:id', catchAsync(async(req, res, next) => {
+    try {
+        const { id } = req.params;
+        const user = await User.findOne({_id: id}).populate('userID')
+        if(user.userID){
+            console.log(req.body)
+            const new_userID = await UserID.findOneAndUpdate({_id: user.userID._id}, {...req.body})
+            .then(async data => {
+                const user = await User.findOneAndUpdate({_id: id}, {idVerified: true})
+
+                res.status(200).json({"message": "Ok"})
+            })
+        } else {
+            const new_data = new UserID({
+                BVN: req.body.BVN,
+                NIN: req.body.NIN
+            })
+
+            await new_data.save()
+            user.idVerified = true
+            user.userID = new_data
+            await user.save()
+            res.status(200).json({"message": "Ok"})
+
+        }
+
+    } catch (e){
         return next(e)
     }
 }))

@@ -117,7 +117,10 @@ module.exports.business = catchAsync(async( req, res, next) => {
         //   console.log('Failed Auth')
         //   res.status(403).json({"code": 403, "message": 'Auth failed'})
         // } else {
-          const users = await User.find().populate('business').populate('subscription_status')
+          const users = await User.find().populate('business')
+          .populate('subscription_status')
+          .populate('userID')
+          .populate('insitution')
 
           res.status(200).json({"code": 200, "response": users})
   //       }
