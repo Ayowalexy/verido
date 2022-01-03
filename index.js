@@ -163,7 +163,7 @@ app.post('/payment',verifyToken, async (req, res, next) => {
                 const user = await User.findOne({username: data.user})
                 console.log(user, data.user)
                 let id;
-                if(typeof user.stripeCustomerID === null){
+                if(user.stripeCustomerID === null){
                     const customer = await stripe.customers.create({
                         email: user.email ? user.email : null,
                         phone: user.username,
