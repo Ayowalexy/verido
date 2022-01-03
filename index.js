@@ -39,7 +39,8 @@ const multer = require('multer')
 const {storage} = require('./cloudinary/index')
 const cloudinary = require('cloudinary').v2
 const upload = multer({ storage })
-const stripe = require('stripe')('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');
+const STRIPE_LIVE_KEY = process.env.STRIPE_LIVE_KEY
+const stripe = require('stripe')(STRIPE_LIVE_KEY);
 const KEYPATH = ''
 const SCOPE = ['https://www.googleapis.com/auth/drive']
 
