@@ -15,7 +15,8 @@ const jwt = require('jsonwebtoken')
 const Video = require('../models/users/Videos')
 const userID = require('../models/users/UserID')
 const Institution = require('../models/users/Institution')
-const stripe = require('stripe')('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');
+const STRIPE_LIVE_KEY = process.env.STRIPE_LIVE_KEY
+const stripe = require('stripe')(STRIPE_LIVE_KEY);
 if(process.env.NODE_ENV !== "production"){
     require('dotenv').config()
 }
