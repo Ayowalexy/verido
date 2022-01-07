@@ -65,7 +65,7 @@ const DATABASE = process.env.DATABASE
 
 const DB = `mongodb+srv://seinde4:${PASSWORD}@cluster0.pp8yv.mongodb.net/${DATABASE}?retryWrites=true&w=majority` || 'mongodb://localhost:27017/verido';
 
-mongoose.connect(DB,
+mongoose.connect('mongodb://localhost:27017/verido',
     {    
     useNewUrlParser: true,
     useUnifiedTopology: true,
@@ -334,7 +334,8 @@ app.post('/new-payment', verifyToken, catchAsync(async (req, res, next) => {
                         val = 0
                         break
                 }
-                const d = new Date(user.subscription_status.expires)
+                // const d = new Date(user.subscription_status.expires)
+                const d = new Date()
                 d.setDate(d.getDate() + val);
 
                 
