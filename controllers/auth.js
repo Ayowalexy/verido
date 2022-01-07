@@ -496,16 +496,16 @@ module.exports.register = catchAsync(async(req, res, next) => {
 
         await newSubcription.save()
 
-        // const customer = await stripe.customers.create({
-        //     email: email ? email : null,
-        //     phone: username,
-        //     name: full_name
-        // });
+        const customer = await stripe.customers.create({
+            email: email ? email : null,
+            phone: username,
+            name: full_name
+        });
         const user = new User(
             {full_name,
              username, 
              email,
-            //  stripeCustomerID: customer.id,
+             stripeCustomerID: customer.id,
             organization_id, 
             database: null, 
             phoneVerified: false,

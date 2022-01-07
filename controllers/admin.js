@@ -7,6 +7,24 @@ const jwt = require('jsonwebtoken')
 const User = require('../models/users/Users')
 const catchAsync = require('../utils/catchAsync')
 const nodemailer = require('nodemailer')
+const schedule = requrie('node-schedule')
+const SubScription = require('../models/users/Subcription.js')
+
+// const rule = new schedule.RecurrenceRule();
+// rule.minute = 30;
+
+// const job = schedule.scheduleJob(rule, async function(){
+
+//   const date_1 = new Date()
+//   const subs = await Subscription.find()
+//   subs.map(data => {
+//     let d_1 = new Date(data.expires)
+
+//   })
+//   console.log('The answer to life, the universe, and everthing!');
+// });
+
+
 
 module.exports.register_admin = async (req, res) => {
     await bcrypt.hash(req.body.password, 12).then(async function(hash){
