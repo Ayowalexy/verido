@@ -7,7 +7,7 @@ const jwt = require('jsonwebtoken')
 const User = require('../models/users/Users')
 const catchAsync = require('../utils/catchAsync')
 const nodemailer = require('nodemailer')
-const schedule = requrie('node-schedule')
+// const schedule = requrie('node-schedule')
 const SubScription = require('../models/users/Subcription.js')
 
 // const rule = new schedule.RecurrenceRule();
