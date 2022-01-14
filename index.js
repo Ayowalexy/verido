@@ -41,6 +41,7 @@ const cloudinary = require('cloudinary').v2
 const upload = multer({ storage })
 const STRIPE_LIVE_KEY = process.env.STRIPE_LIVE_KEY
 const stripe = require('stripe')(STRIPE_LIVE_KEY);
+const Consultant = require('./models/admin/Consultant')
 const KEYPATH = ''
 const SCOPE = ['https://www.googleapis.com/auth/drive']
 
@@ -126,6 +127,36 @@ app.get('/user-verification', verifyToken, catchAsync( async( req, res, next) =>
                 res.status(200).json({"message": userid})
             }
         })
+    } catch(e){
+        return next(e)
+    }
+}))
+
+app.post('/new-consultant', catchAsync( async (req, res, next) => {
+    try {
+        
+        await bcrypt.hash(req.body.password, 12).then(async function(hash){
+            
+            const consultant = new Consultant({email:req.body.email, username: req.body.username,
+                                                mobile_number: req.body.number, password: hash})
+            await consultant.save();
+            const user = await Consultant.findOne({email: req.body.email})
+            return res.status(200).json({"message": user})
+        })
+    } catch(e){
+        return next(e)
+    }
+}))
+
+app.post('/consultant-login', catchAsync( async( req, res, next) => {
+    try {
+        const { username, password } = req.body;
+        const consultant = await Consultant.findOne({username: username})
+        if(consultant){
+            return res.status(200).json({"consultant": consultant})
+        } else {
+            return res.status(401).json({"message": "Auth Failed"})
+        }
     } catch(e){
         return next(e)
     }

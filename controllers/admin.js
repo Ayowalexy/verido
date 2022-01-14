@@ -7,6 +7,7 @@ const jwt = require('jsonwebtoken')
 const User = require('../models/users/Users')
 const catchAsync = require('../utils/catchAsync')
 const nodemailer = require('nodemailer')
+const Consultant = require('../models/admin/Consultant')
 // const schedule = requrie('node-schedule')
 const SubScription = require('../models/users/Subcription.js')
 
@@ -37,17 +38,17 @@ module.exports.register_admin = async (req, res) => {
 module.exports.admin_login = catchAsync(async(req, res, next) => {
     try {
         const { email, password } = req.body;
-        console.log(req.body)
         const admin = await Admin.findOne({username: email})
-        console.log(admin, 'admin')
+        const consultant = await Consultant.findOne({email: email})
         if(admin){
             bcrypt.compare(password, admin.password).then(function(result){
+              console.log('admin')
                 console.log(result)
                 if(result){
                     jwt.sign({username: admin.username}, 'secretkey', async function(err, token){
                         admin.token = token;
                         await admin.save();
-                        return res.status(200).json({"code": 200, "message": "Ok", "response": admin})
+                        return res.status(200).json({"code": 200, "message": "Ok", "response": admin, "role": "admin"})
                     })
                 } 
                 else {
@@ -56,7 +57,25 @@ module.exports.admin_login = catchAsync(async(req, res, next) => {
 
 
             })
-        } else {
+        } else if(consultant){
+          console.log(password, 'consultant')
+          bcrypt.compare(password, consultant.password).then(function(result){
+            console.log(result)
+            if(result){
+                jwt.sign({email: consultant.email}, 'secretkey', async function(err, token){
+                    consultant.token = token;
+                    await consultant.save();
+                    return res.status(200).json({"code": 200, "message": "Ok", "response": consultant, "role": "consultant"})
+                })
+            } 
+            else {
+                return res.status(401).json({"code": 401, "message": "Unauthorised"})
+            }
+
+
+        })
+        }
+         else {
           return res.status(401).json({"code": 401, "message": "Unauthorised"})
         }  
 
