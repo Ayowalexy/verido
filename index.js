@@ -1425,7 +1425,8 @@ app.get('/vidoes', catchAsync(async (req, res, next) => {
     try {
 
         const videos = await Video.find();
-        return res.status(200).json({"code": 200, "status": "Ok", "response": videos})
+        return res.send( videos )
+        // return res.status(200).json({"code": 200, "status": "Ok", "response": videos})
 
     } catch (e){
         return next(e)
