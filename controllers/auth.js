@@ -15,10 +15,7 @@ const jwt = require('jsonwebtoken')
 const Video = require('../models/users/Videos')
 const userID = require('../models/users/UserID')
 const Institution = require('../models/users/Institution')
-<<<<<<< HEAD
 const Consultants = require('../models/admin/Consultant')
-=======
->>>>>>> a0cb98cd3135644bce6036258963c2c75f87355d
 const STRIPE_LIVE_KEY = process.env.STRIPE_LIVE_KEY
 const stripe = require('stripe')(STRIPE_LIVE_KEY);
 if(process.env.NODE_ENV !== "production"){
@@ -431,11 +428,7 @@ module.exports.register = catchAsync(async(req, res, next) => {
         bcrypt.hash(1234, 12, function(err, hash) {
             token = hash;
         })
-<<<<<<< HEAD
         const { full_name = null, email = null, username, consultantID, password, organization_id = null } = req.body;
-=======
-        const { full_name = null, email = null, username, password, organization_id = null } = req.body;
->>>>>>> a0cb98cd3135644bce6036258963c2c75f87355d
 
         let emailUser;
         // let org_id;
@@ -462,11 +455,8 @@ module.exports.register = catchAsync(async(req, res, next) => {
         //     return res.status(401).json({"code": 401, "status": "Duplicate", "message": `${org_id.organization_id} is already registered`})
         // }
 
-<<<<<<< HEAD
         
 
-=======
->>>>>>> a0cb98cd3135644bce6036258963c2c75f87355d
         const dateJoined = new Date();
         let date = new Date()
         date.setDate(date.getDate() + 7)
@@ -509,11 +499,8 @@ module.exports.register = catchAsync(async(req, res, next) => {
 
         await newSubcription.save()
 
-<<<<<<< HEAD
         
 
-=======
->>>>>>> a0cb98cd3135644bce6036258963c2c75f87355d
         const customer = await stripe.customers.create({
             email: email ? email : null,
             phone: username,
