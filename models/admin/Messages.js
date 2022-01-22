@@ -6,5 +6,5 @@ const messageSchema = new mongoose.Schema({
     to: String
 })
 
-
+// console.log()
 module.exports = mongoose.model('Messages', messageSchema)

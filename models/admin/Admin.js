@@ -9,5 +9,5 @@ const adminSchema = new mongoose.Schema({
         ref: 'Messages'
     }]
 })
-
+// console.log()
 module.exports = mongoose.model('Adim', adminSchema)

@@ -25,7 +25,7 @@ const Message = require('../models/admin/Messages')
 //   })
 //   console.log('The answer to life, the universe, and everthing!');
 // });
-
+// console.log()
 
 
 module.exports.register_admin = async (req, res) => {
