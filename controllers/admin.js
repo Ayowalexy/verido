@@ -10,7 +10,10 @@ const nodemailer = require('nodemailer')
 const Consultant = require('../models/admin/Consultant')
 // const schedule = requrie('node-schedule')
 const SubScription = require('../models/users/Subcription.js')
+<<<<<<< HEAD
 const Message = require('../models/admin/Messages')
+=======
+>>>>>>> a0cb98cd3135644bce6036258963c2c75f87355d
 
 // const rule = new schedule.RecurrenceRule();
 // rule.minute = 30;

@@ -22,7 +22,11 @@ const Customer = require('./models/users/Customers')
 const Video = require('./models/users/Videos')
 const Supplier = require('./models/users/Supplier')
 const Subscription = require('./models/users/Subcription')
+<<<<<<< HEAD
 const Message = require('./models/admin/Messages')
+=======
+
+>>>>>>> a0cb98cd3135644bce6036258963c2c75f87355d
 const UserID = require('./models/users/UserID')
 const MoneyOutRoutes = require('./routes/money-out')
 const MoneyInRoutes = require('./routes/money-in')
@@ -112,7 +116,6 @@ app.use('/money-in', verifyToken, MoneyInRoutes)
 app.use(AuthRoutes)
 app.use(passwordRoutes)
 app.use(AdminRoutes)
-
 
 
 
