@@ -103,6 +103,8 @@ passport.use(new passportLocal(User.authenticate()))
 passport.serializeUser(User.serializeUser())
 passport.deserializeUser(User.deserializeUser())
 
+
+func()
 app.get('/', (req, res) => {
     res.send('<h1>Express App is running</h1>')
 })
