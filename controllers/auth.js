@@ -284,8 +284,8 @@ module.exports.sms_text = catchAsync( async (req, res, next) => {
                         twilio.messages
                         .create({
                            body: `Your credit transaction with ${user.business.name} can be viewed at ${url}. You owe a balance of ${balance_amount}.For enquiries about this transaction, contact ${user.business.name} at ${user.username}  Message generated with Verido https://verido.app`,
-                           from: '+14706256431',
-                           to: `${phone_number}`
+                           from: '+447401123846',
+                           to: '' + phone_number
                          })
                         .then(message => console.log(message.sid));
                         console.log(url);
