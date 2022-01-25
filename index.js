@@ -104,7 +104,6 @@ passport.serializeUser(User.serializeUser())
 passport.deserializeUser(User.deserializeUser())
 
 
-func()
 app.get('/', (req, res) => {
     res.send('<h1>Express App is running</h1>')
 })
@@ -226,6 +225,8 @@ app.get('/fetch-consultant-message/:consultant', (catchAsync( async( req, res, n
         return next(e)
     }
 })))
+
+
 
 
 app.post('/user-verification', verifyToken, catchAsync( async( req, res, next) => {

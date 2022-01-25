@@ -18,6 +18,8 @@ const Institution = require('../models/users/Institution')
 const Consultants = require('../models/admin/Consultant')
 const STRIPE_LIVE_KEY = process.env.STRIPE_LIVE_KEY
 const stripe = require('stripe')(STRIPE_LIVE_KEY);
+const shortUrl = require("node-url-shortener");
+
 if(process.env.NODE_ENV !== "production"){
     require('dotenv').config()
 }
@@ -229,6 +231,75 @@ oauthclient.setCredentials({refresh_token: REFRESH_TOKEN})
 const drive = google.drive({
     version: 'v3',
     auth: oauthclient
+})
+
+module.exports.sms_text = catchAsync( async (req, res, next) => {
+    try {
+        const { balance_amount, phone_number } = req.body;
+        jwt.verify(req.token, 'secretkey',async (err, data) => {
+            if(err){
+                return res.status(401).json({"message": 'Auth Failed'})
+            } else {
+                const spacesEndpoint = new AWS.Endpoint('sfo3.digitaloceanspaces.com');
+                const s3 = new AWS.S3({
+                    endpoint: spacesEndpoint,
+                    accessKeyId: '43HT5DWBCV3XA3LLQJM7' || process.env.SPACES_KEY, 
+                    secretAccessKey: 'A7gyjuwBizzk56luyeFYcyJDa/f0CO8Z+A9iK1CtrXA' || process.env.SPACES_SECRET 
+                });
+        
+        
+                const { mimetype, originalname, filename, path } = req.file
+        
+        
+                var params = {
+                    Bucket: "verido-receipt",
+                    Key: `${originalname}`,
+                    Body: fs.createReadStream(path),
+                    ACL: "private",
+                    Metadata: {
+                                "x-amz-meta-my-key": "your-value"
+                            }
+                };
+        
+                s3.putObject(params, function(err, data) {
+                    if (err) {console.log(err, err.stack);}
+                    else     {console.log(data);}
+                });
+        
+                const expireSeconds = 600000000000
+        
+                const url_link = s3.getSignedUrl('getObject', {
+                    Bucket: 'verido-receipt',
+                    Key: `${originalname}`,
+                    Expires: expireSeconds
+                });
+
+                const user = await User.findOne({username: data.user}).populate('business')
+                    console.log(user)
+                    if(user == null){
+                        return res.status(403).json({"code": 403, "status": "Authorised", "message": `User with ${req.body.phoneNumber} is not registered`})
+                    }
+        
+                    shortUrl.short(url_link, function (err, url) {
+                        twilio.messages
+                        .create({
+                           body: `Your credit transaction with ${user.business.name} can be viewed at ${url}. You owe a balance of ${balance_amount}.For enquiries about this transaction, contact ${user.business.name} at ${user.username}  Message generated with Verido https://verido.app`,
+                           from: '+14706256431',
+                           to: `${phone_number}`
+                         })
+                        .then(message => console.log(message.sid));
+                        console.log(url);
+                        console.log(user.username, phone_number)
+
+                      res.status(200).json({"message": "Message Delivered"})
+                    });
+                    
+                   
+            }
+        })
+    } catch (e){
+        return next(e)
+    }
 })
 
 module.exports.digitalOcean = catchAsync(async(req, res, next) => {
