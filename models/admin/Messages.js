@@ -5,7 +5,8 @@ const messageSchema = new mongoose.Schema({
     from: String,
     to: String,
     sent: String,
-    received: String
+    received: String,
+    channel: String
 })
 
 // console.log()
