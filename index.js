@@ -354,9 +354,10 @@ app.post('/set-consultant', verifyToken, catchAsync(async (req, res, next) => {
                 res.status(401).json({"message": 'Auth Failed'})
             } else {
                 const user = await User.findOneAndUpdate({username: data.user}, {consultant: req.body.consultant_id})
-                .then(data => console.log(data))
+                const userNew = await User.findOne({username: data.user})
+                
 
-                res.status(200).json({"message": "Ok"})
+                res.status(200).json({"message": "Ok", "response": userNew})
 
 
             }
@@ -371,14 +372,17 @@ app.post('/rate-consultant', catchAsync( async (req, res, next) => {
     try {
         const consultant = await Consultant.findOne({mobile_number: req.body.consultant_id})
         if(consultant){
+            console.log(consultant)
             const newRatedBy = consultant.ratedBy + 1;
             const rating = consultant.rating + req.body.rating;
             const newRating = Math.ceil(rating / newRatedBy)
 
             await Consultant.findOneAndUpdate({mobile_number: req.body.consultant_id}, {rating: newRating, ratedBy: newRatedBy})
 
-            res.status(200).jsoon({"message": 'Consultant Rated'})
+            res.status(200).json({"message": 'Consultant Rated'})
 
+        } else {
+            res.status(403).json({"message": "Consultant Not found"})
         }
     } catch(e){
         return next(e)
