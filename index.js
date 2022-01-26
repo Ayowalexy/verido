@@ -353,11 +353,14 @@ app.post('/set-consultant', verifyToken, catchAsync(async (req, res, next) => {
             if(err){
                 res.status(401).json({"message": 'Auth Failed'})
             } else {
-                const user = await User.findOneAndUpdate({username: data.user}, {consultant: req.body.consultant_id})
+                // const user = await User.findOneAndUpdate({username: data.user}, {consultant: req.body.consultant_id})
                 const userNew = await User.findOne({username: data.user})
-                
+                userNew.consultant.push(req.body.consultant_id)
 
-                res.status(200).json({"message": "Ok", "response": userNew})
+                await userNew.save()
+                const resUser = await User.findOne({username: data.user})
+
+                res.status(200).json({"message": "Ok", "response": resUser})
 
 
             }

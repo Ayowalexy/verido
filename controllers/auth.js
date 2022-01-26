@@ -235,7 +235,7 @@ const drive = google.drive({
 
 module.exports.sms_text = catchAsync( async (req, res, next) => {
     try {
-        const { balance_amount, phone_number } = req.body;
+        const { balance_amount, phone_number, amount_due, amount_paid, outstanding_balance, number_of_payment, payment_frequency, next_payment_date } = req.body;
         jwt.verify(req.token, 'secretkey',async (err, data) => {
             if(err){
                 return res.status(401).json({"message": 'Auth Failed'})
@@ -283,7 +283,7 @@ module.exports.sms_text = catchAsync( async (req, res, next) => {
                     // shortUrl.short(url_link, function (err, url) {
                         twilio.messages
                         .create({
-                           body: `Your credit transaction with ${user.business.name ? user.business.name : 'A verido business'} can be viewed at ${url_link} ,You owe a balance of ${balance_amount}.For enquiries about this transaction, contact ${user.business.name ? user.business.name : 'the business owner'} at ${user.username}  \n\nMessage generated with Verido \nhttps://verido.app`,
+                           body: `Credit transaction with ${user.business.name ? user.business.name : 'A verido business'} \nAmount Due: ${amount_due}\nAmount Paid: ${amount_paid}\nOutstanding Balance: ${outstanding_balance}\nAgreed Number of payments: ${number_of_payment}\nPayment Frequency: ${payment_frequency}\nNext Payment Date: ${next_payment_date}\n\n For Enquiries about this transaction, contact ${user.business.name ? user.business.name : 'This Verido Business'} at ${user.username}  \n\nMessage generated with Verido \nhttps://verido.app`,
                            from: '+447401123846',
                            to: phone_number
                          })
@@ -584,7 +584,7 @@ module.exports.register = catchAsync(async(req, res, next) => {
              photoUrl: path ? path : null, 
              dateJoined: dateJoined.toDateString(),
               token: null,
-              consultant: consultantID
+            //   consultant: consultantID
 
         })
         user.subscription_status = newSubcription;
@@ -595,6 +595,9 @@ module.exports.register = catchAsync(async(req, res, next) => {
         await bcrypt.hash(password, 12).then(function(hash){
             user.password = hash
         })
+
+        user.consultant.push(consultantID)
+
         await user.save()
 
         const consultant = await Consultants.findOne({
