@@ -18,6 +18,7 @@ const userSchema = new mongoose.Schema({
     dateJoined : {
         type: String,
     },
+    consultant: String,
     phoneVerified : Boolean,
     idVerified : {
         type: Boolean,

@@ -346,6 +346,45 @@ app.post('/payment',verifyToken, async (req, res, next) => {
 
 })
 
+
+app.post('/set-consultant', verifyToken, catchAsync(async (req, res, next) => {
+    try {
+        jwt.verify(req.token, 'secretkey', async(err, data) => {
+            if(err){
+                res.status(401).json({"message": 'Auth Failed'})
+            } else {
+                const user = await User.findOneAndUpdate({username: data.user}, {consultant: req.body.consultant_id})
+                .then(data => console.log(data))
+
+                res.status(200).json({"message": "Ok"})
+
+
+            }
+        })
+    } catch(e){
+        return next(e)
+    }
+}))
+
+
+app.post('/rate-consultant', catchAsync( async (req, res, next) => {
+    try {
+        const consultant = await Consultant.findOne({mobile_number: req.body.consultant_id})
+        if(consultant){
+            const newRatedBy = consultant.ratedBy + 1;
+            const rating = consultant.rating + req.body.rating;
+            const newRating = Math.ceil(rating / newRatedBy)
+
+            await Consultant.findOneAndUpdate({mobile_number: req.body.consultant_id}, {rating: newRating, ratedBy: newRatedBy})
+
+            res.status(200).jsoon({"message": 'Consultant Rated'})
+
+        }
+    } catch(e){
+        return next(e)
+    }
+}))
+
 const endpointSecret = "whsec_bGQ3BuM9QbMRjYFX954Ueob2YgOdf8zQ";
 
 app.post('/webhook', express.raw({type: 'application/json'}),  async (request, response) => {

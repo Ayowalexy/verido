@@ -280,19 +280,20 @@ module.exports.sms_text = catchAsync( async (req, res, next) => {
                         return res.status(403).json({"code": 403, "status": "Authorised", "message": `User with ${req.body.phoneNumber} is not registered`})
                     }
         
-                    shortUrl.short(url_link, function (err, url) {
+                    // shortUrl.short(url_link, function (err, url) {
                         twilio.messages
                         .create({
-                           body: `Your credit transaction with ${user.business.name} can be viewed at ${url}. You owe a balance of ${balance_amount}.For enquiries about this transaction, contact ${user.business.name} at ${user.username}  Message generated with Verido https://verido.app`,
+                           body: `Your credit transaction with ${user.business.name ? user.business.name : 'A verido business'} can be viewed at ${url_link} ,You owe a balance of ${balance_amount}.For enquiries about this transaction, contact ${user.business.name ? user.business.name : 'the business owner'} at ${user.username}  \n\nMessage generated with Verido \nhttps://verido.app`,
                            from: '+447401123846',
-                           to: '' + phone_number
+                           to: phone_number
                          })
-                        .then(message => console.log(message.sid));
-                        console.log(url);
+                        .then(message => console.log(message.sid))
+                        .catch(e => console.log(e))
+                        console.log(url_link);
                         console.log(user.username, phone_number)
 
                       res.status(200).json({"message": "Message Delivered"})
-                    });
+                    // });
                     
                    
             }
@@ -583,6 +584,7 @@ module.exports.register = catchAsync(async(req, res, next) => {
              photoUrl: path ? path : null, 
              dateJoined: dateJoined.toDateString(),
               token: null,
+              consultant: consultantID
 
         })
         user.subscription_status = newSubcription;

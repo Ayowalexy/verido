@@ -6,6 +6,14 @@ const consultantSchema = new mongoose.Schema({
     token: String,
     email: String,
     mobile_number: String,
+    rating: {
+        type: Number,
+        default: 0
+    },
+    ratedBy: {
+        type: Number,
+        default: 0
+    },
     business: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Users'
