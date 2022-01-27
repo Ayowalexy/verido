@@ -25,6 +25,6 @@ router.post('/verify-otp', verifyToken, Auth.verifyOTP)
 
 router.post('/db-lite',verifyToken,  dbUpload.single('db'), Auth.veridoDB)
 
-router.post('/print-receipt',verifyToken,  dbUpload.single('receipt'), Auth.sms_text)
+router.post('/print-receipt',verifyToken, Auth.sms_text)
 
 module.exports = router

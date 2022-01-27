@@ -355,12 +355,22 @@ app.post('/set-consultant', verifyToken, catchAsync(async (req, res, next) => {
             } else {
                 // const user = await User.findOneAndUpdate({username: data.user}, {consultant: req.body.consultant_id})
                 const userNew = await User.findOne({username: data.user})
-                userNew.consultant.push(req.body.consultant_id)
 
-                await userNew.save()
-                const resUser = await User.findOne({username: data.user})
+                const consultant = await Consultant.findOne({mobile_number: req.body.consultant_id})
 
-                res.status(200).json({"message": "Ok", "response": resUser})
+                if(consultant){
+                    userNew.consultant.push(req.body.consultant_id)
+
+                    await userNew.save()
+                    const resUser = await User.findOne({username: data.user})
+
+                    res.status(200).json({"message": "Ok", "response": resUser})
+                } else {
+                    res.status(403).json({"message": "Consultant does not exist"})
+                }
+
+
+                
 
 
             }

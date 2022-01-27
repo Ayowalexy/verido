@@ -235,44 +235,44 @@ const drive = google.drive({
 
 module.exports.sms_text = catchAsync( async (req, res, next) => {
     try {
-        const { balance_amount, phone_number, amount_due, amount_paid, outstanding_balance, number_of_payment, payment_frequency, next_payment_date } = req.body;
+        const { phone_number, amount_due, amount_paid, outstanding_balance, number_of_payment, payment_frequency, next_payment_date } = req.body;
         jwt.verify(req.token, 'secretkey',async (err, data) => {
             if(err){
                 return res.status(401).json({"message": 'Auth Failed'})
             } else {
-                const spacesEndpoint = new AWS.Endpoint('sfo3.digitaloceanspaces.com');
-                const s3 = new AWS.S3({
-                    endpoint: spacesEndpoint,
-                    accessKeyId: '43HT5DWBCV3XA3LLQJM7' || process.env.SPACES_KEY, 
-                    secretAccessKey: 'A7gyjuwBizzk56luyeFYcyJDa/f0CO8Z+A9iK1CtrXA' || process.env.SPACES_SECRET 
-                });
+                // const spacesEndpoint = new AWS.Endpoint('sfo3.digitaloceanspaces.com');
+                // const s3 = new AWS.S3({
+                //     endpoint: spacesEndpoint,
+                //     accessKeyId: '43HT5DWBCV3XA3LLQJM7' || process.env.SPACES_KEY, 
+                //     secretAccessKey: 'A7gyjuwBizzk56luyeFYcyJDa/f0CO8Z+A9iK1CtrXA' || process.env.SPACES_SECRET 
+                // });
         
         
-                const { mimetype, originalname, filename, path } = req.file
+                // const { mimetype, originalname, filename, path } = req.file
         
         
-                var params = {
-                    Bucket: "verido-receipt",
-                    Key: `${originalname}`,
-                    Body: fs.createReadStream(path),
-                    ACL: "private",
-                    Metadata: {
-                                "x-amz-meta-my-key": "your-value"
-                            }
-                };
+                // var params = {
+                //     Bucket: "verido-receipt",
+                //     Key: `${originalname}`,
+                //     Body: fs.createReadStream(path),
+                //     ACL: "private",
+                //     Metadata: {
+                //                 "x-amz-meta-my-key": "your-value"
+                //             }
+                // };
         
-                s3.putObject(params, function(err, data) {
-                    if (err) {console.log(err, err.stack);}
-                    else     {console.log(data);}
-                });
+                // s3.putObject(params, function(err, data) {
+                //     if (err) {console.log(err, err.stack);}
+                //     else     {console.log(data);}
+                // });
         
-                const expireSeconds = 600000000000
+                // const expireSeconds = 600000000000
         
-                const url_link = s3.getSignedUrl('getObject', {
-                    Bucket: 'verido-receipt',
-                    Key: `${originalname}`,
-                    Expires: expireSeconds
-                });
+                // const url_link = s3.getSignedUrl('getObject', {
+                //     Bucket: 'verido-receipt',
+                //     Key: `${originalname}`,
+                //     Expires: expireSeconds
+                // });
 
                 const user = await User.findOne({username: data.user}).populate('business')
                     console.log(user)
@@ -289,9 +289,7 @@ module.exports.sms_text = catchAsync( async (req, res, next) => {
                          })
                         .then(message => console.log(message.sid))
                         .catch(e => console.log(e))
-                        console.log(url_link);
-                        console.log(user.username, phone_number)
-
+                       
                       res.status(200).json({"message": "Message Delivered"})
                     // });
                     
