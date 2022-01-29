@@ -463,6 +463,8 @@ module.exports.digitalOcean = catchAsync(async(req, res, next) => {
                 .populate('database')
                 .populate('videos')
                 .populate('insitution')
+                .populate('consultant')
+
     
                 
     
@@ -722,6 +724,7 @@ module.exports.register = catchAsync(async(req, res, next) => {
         .populate('business')
         .populate('subscription_status')
         .populate('database')
+        .populate('consultant')
 
 
         req.login(user, e => {
@@ -872,6 +875,8 @@ module.exports.login =  async (req, res, next) => {
     .populate('token')
     .populate('videos')
     .populate('insitution')
+    .populate('consultant')
+
 
 if(user !== null){
     await bcrypt.compare(password, user.password).then(function(result){

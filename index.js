@@ -1224,6 +1224,8 @@ app.post('/business-information',verifyToken, catchAsync( async(req, res, next) 
                 .populate('business')
                 .populate('subscription_status')
                 .populate('database')
+                .populate('consultant')
+
                 const newBusiness = new Business({...req.body});
                 await newBusiness.save()
                 user.business = newBusiness;
@@ -1276,6 +1278,7 @@ app.get('/user', verifyToken, catchAsync(async (req, res, next) => {
                     }
                 })
                 .populate('customer')
+                .populate('consultant')
                 .populate('suppliers')
                 .populate({
                     path: 'money_in',
@@ -1459,6 +1462,7 @@ app.post('/update-profile', verifyToken, catchAsync(async(req, res, next) => {
                         }
                     }
                 })
+                .populate('consultant')
                 .populate({
                     path: 'money_in',
                     populate: {
