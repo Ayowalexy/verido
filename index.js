@@ -43,7 +43,11 @@ const STRIPE_LIVE_KEY = process.env.STRIPE_LIVE_KEY
 const stripe = require('stripe')(STRIPE_LIVE_KEY);
 const Consultant = require('./models/admin/Consultant')
 const KEYPATH = ''
-const SCOPE = ['https://www.googleapis.com/auth/drive']
+const SCOPE = ['https://www.googleapis.com/auth/drive'];
+const schedule = require('node-schedule');
+const cron = require('node-cron');
+const {TWILO_ACCOUNT_SID, VERIFICATION_SID, SECRET_KEY, TWILO_AUTH_TOKEN} = process.env
+const twilio = require('twilio')(TWILO_ACCOUNT_SID, TWILO_AUTH_TOKEN);
 
 const usersMap = []
 const el_4 = []
@@ -137,8 +141,20 @@ app.post('/new-consultant', catchAsync( async (req, res, next) => {
     try {
         
         await bcrypt.hash(req.body.password, 12).then(async function(hash){
-            
+
+            const full_name_split = req.body.username.trim().split(' ');
+
+            console.log(full_name_split, full_name_split[0])
+            let salt_id = Math.floor(Math.random() * 10000)
+
+
+            const availaible_id = await Consultant.findOne({consultant_id: `${full_name_split[0]}-${salt_id}`})
+            if(availaible_id){
+                let newRand = Math.floor(Math.random() * 1000)
+                salt_id = newRand + salt_id
+            } 
             const consultant = new Consultant({email:req.body.email, username: req.body.username,
+                                                consultant_id: `${full_name_split[0].trim()}-${salt_id}`,
                                                 mobile_number: req.body.mobile_number, password: hash})
             await consultant.save();
             const user = await Consultant.findOne({email: req.body.email})
@@ -282,6 +298,49 @@ app.post('/admin-verification/:id', catchAsync(async(req, res, next) => {
 }))
 
 
+app.post('/reminder', verifyToken, catchAsync(async ( req, res, next) => {
+    try {
+        const { days, phoneNumber } = req.body
+
+        jwt.verify(req.token, 'secretkey', async( err, data) => {
+            if(err){
+                return res.status(401).json({"message": "Auth failed"})
+            } else {
+                // const days = ['2022-01-29', '2022-02-26']
+
+
+                for(let day of days){
+
+                    let values = day.split('-');
+
+                    let date = new Date(Number(values[0]), Number(values[1]) - 1, Number(values[2]), 7, 30, 0)
+
+                    const job = schedule.scheduleJob(date, function(){
+                        twilio.messages
+                        .create({
+                           body: `Your next payment is schceduled for ${days[days.indexOf(day) + 1]}`,
+                           from: '+447401123846',
+                           to: phoneNumber
+                         })
+                        .then(message => console.log(message.sid))
+                        .catch(e => console.log(e))
+                        console.log('The world is going to end today.');
+                    });
+                    console.log(job)
+
+                }
+                res.status(200).json({"message": `${days.length} Notifications schceduled`})
+
+
+        }
+            
+        })
+    } catch(e){
+        return next(e)
+    }
+}))
+
+
 
 app.post('/payment',verifyToken, async (req, res, next) => {
 
@@ -356,7 +415,7 @@ app.post('/set-consultant', verifyToken, catchAsync(async (req, res, next) => {
                 // const user = await User.findOneAndUpdate({username: data.user}, {consultant: req.body.consultant_id})
                 const userNew = await User.findOne({username: data.user})
 
-                const consultant = await Consultant.findOne({mobile_number: req.body.consultant_id})
+                const consultant = await Consultant.findOne({consultant_id: req.body.consultant_id})
 
                 if(consultant){
                     userNew.consultant.push(req.body.consultant_id)
@@ -383,14 +442,14 @@ app.post('/set-consultant', verifyToken, catchAsync(async (req, res, next) => {
 
 app.post('/rate-consultant', catchAsync( async (req, res, next) => {
     try {
-        const consultant = await Consultant.findOne({mobile_number: req.body.consultant_id})
+        const consultant = await Consultant.findOne({consultant_id: req.body.consultant_id})
         if(consultant){
             console.log(consultant)
             const newRatedBy = consultant.ratedBy + 1;
             const rating = consultant.rating + req.body.rating;
             const newRating = Math.ceil(rating / newRatedBy)
 
-            await Consultant.findOneAndUpdate({mobile_number: req.body.consultant_id}, {rating: newRating, ratedBy: newRatedBy})
+            await Consultant.findOneAndUpdate({consultant_id: req.body.consultant_id}, {rating: newRating, ratedBy: newRatedBy})
 
             res.status(200).json({"message": 'Consultant Rated'})
 

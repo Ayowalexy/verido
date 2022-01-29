@@ -599,7 +599,7 @@ module.exports.register = catchAsync(async(req, res, next) => {
         await user.save()
 
         const consultant = await Consultants.findOne({
-            mobile_number: consultantID
+            consultant_id: consultantID
         })
 
         if(consultant){
