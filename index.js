@@ -307,7 +307,7 @@ app.post('/reminder', verifyToken, catchAsync(async ( req, res, next) => {
                 return res.status(401).json({"message": "Auth failed"})
             } else {
                 // const days = ['2022-01-29', '2022-02-26']
-
+                const user = await User.findOne({username: data.user})
 
                 for(let day of days){
 
@@ -318,7 +318,7 @@ app.post('/reminder', verifyToken, catchAsync(async ( req, res, next) => {
                     const job = schedule.scheduleJob(date, function(){
                         twilio.messages
                         .create({
-                           body: `Your next payment is schceduled for ${days[days.indexOf(day) + 1]}`,
+                           body: `Your credit transaction with ${user.business.name ? user.business.name : "a Verido Business"} is due an installment payment today. Please make necessary payments to avoid defaults today. \n\n For Enquiries about this transaction, contact ${user.business.name ? user.business.name : "This verido Business"} at ${user.username} \n\n Message generated with Verido\nhttps://verido.app`,
                            from: '+447401123846',
                            to: phoneNumber
                          })
@@ -423,7 +423,7 @@ app.post('/set-consultant', verifyToken, catchAsync(async (req, res, next) => {
                     await userNew.save()
                     const resUser = await User.findOne({username: data.user})
 
-                    res.status(200).json({"message": "Ok", "response": resUser})
+                    res.status(200).json({"message": "Ok", "response": resUser, "consultant": consultant})
                 } else {
                     res.status(403).json({"message": "Consultant does not exist"})
                 }
