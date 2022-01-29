@@ -413,15 +413,19 @@ app.post('/delete-consultant',verifyToken, catchAsync( async( req, res, next) =>
             if(err){
                 res.status(401).json({"message": "Auth Failed"})
             } else {
-                const users = await User.find();
+                const users = await User.findOne({username: data.user});
 
-                const deleteConsultant = await Consultant.findOneAndDelete({consultant_id: req.body.consultant_id})
 
-                for(let user of users){
-                    if(user.consultant._id === req.body.consultant_id){
-                        user.consultant.splice(user.consultant.indexOf(user.consultant), 1)
-                    }
-                }
+                const delConst = users.consultant.find(del_consultant => del_consultant.consultant_id === req.body.consultant_id)
+
+                users.consultant.splice(users.consultant.indexOf(delConst), 1)
+                // const deleteConsultant = await Consultant.findOneAndDelete({consultant_id: req.body.consultant_id})
+
+                // for(let user of users){
+                //     if(user.consultant._id === req.body.consultant_id){
+                //         user.consultant.splice(user.consultant.indexOf(user.consultant), 1)
+                //     }
+                // }
 
                 await users.save();
 
@@ -444,7 +448,9 @@ app.post('/set-consultant', verifyToken, catchAsync(async (req, res, next) => {
 
                 const consultant = await Consultant.findOne({consultant_id: req.body.consultant_id})
 
-                if(consultant){
+               const available_consultant = userNew.consultant.some(consultant_id => consultant_id._id === req.body.consultant_id)
+
+                if(consultant && available_consultant){
                     userNew.consultant.push(consultant)
                     consultant.business.push(userNew)
 
@@ -459,7 +465,7 @@ app.post('/set-consultant', verifyToken, catchAsync(async (req, res, next) => {
 
                     res.status(200).json({"message": "Ok", "response": resUser})
                 } else {
-                    res.status(403).json({"message": "Consultant does not exist"})
+                    res.status(401).json({"message": "Consultant has been added already or does not exist"})
                 }
 
 
