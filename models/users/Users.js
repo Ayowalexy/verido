@@ -18,6 +18,10 @@ const userSchema = new mongoose.Schema({
     dateJoined : {
         type: String,
     },
+    messages: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Messages'
+    }],
     consultant: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'consultants'

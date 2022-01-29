@@ -227,12 +227,43 @@ app.post('/new-consultant-message/:consultant', catchAsync( async (req, res, nex
         return next(e)
     }
 }))
+app.post('/new-business-message/:id', catchAsync( async (req, res, next) => {
+    try {
+        const { id } = req.params;
+
+        const message = new Message({...req.body})
+
+        await message.save();
+
+        const current_consultant = await User.findOne({_id: id});
+        current_consultant.messages.push(message);
+
+        await current_consultant.save();
+
+        return res.status(200).json({"message": "Ok"})
+    } catch(e){
+        return next(e)
+    }
+}))
 
 app.get('/fetch-consultant-message/:consultant', (catchAsync( async( req, res, next) => {
     try {
         const { consultant } = req.params;
 
         const current_consultant = await Consultant.findOne({_id: consultant}).populate('messages');
+
+        if(current_consultant){
+            return res.status(200).json({"messages": current_consultant});
+        }
+    } catch(e){
+        return next(e)
+    }
+})))
+app.get('/fetch-business-message/:id', (catchAsync( async( req, res, next) => {
+    try {
+        const { id } = req.params;
+
+        const current_consultant = await User.findOne({_id: id}).populate('messages');
 
         if(current_consultant){
             return res.status(200).json({"messages": current_consultant});
