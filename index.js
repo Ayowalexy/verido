@@ -450,7 +450,7 @@ app.post('/set-consultant', verifyToken, catchAsync(async (req, res, next) => {
 
                const available_consultant = userNew.consultant.some(consultant_id => consultant_id._id === req.body.consultant_id)
 
-                if(consultant && available_consultant){
+                if(consultant && !available_consultant){
                     userNew.consultant.push(consultant)
                     consultant.business.push(userNew)
 
