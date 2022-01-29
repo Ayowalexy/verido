@@ -307,7 +307,7 @@ app.post('/reminder', verifyToken, catchAsync(async ( req, res, next) => {
                 return res.status(401).json({"message": "Auth failed"})
             } else {
                 // const days = ['2022-01-29', '2022-02-26']
-                const user = await User.findOne({username: data.user})
+                const user = await User.findOne({username: data.user}).populate('business')
 
                 for(let day of days){
 
@@ -406,6 +406,33 @@ app.post('/payment',verifyToken, async (req, res, next) => {
 })
 
 
+app.post('/delete-consultant',verifyToken, catchAsync( async( req, res, next) => {
+    try {
+
+        jwt.verify(req.token, 'secretkey', async( err, data) => {
+            if(err){
+                res.status(401).json({"message": "Auth Failed"})
+            } else {
+                const users = await User.find();
+
+                const deleteConsultant = await Consultant.findOneAndDelete({consultant_id: req.body.consultant_id})
+
+                for(let user of users){
+                    if(user.consultant._id === req.body.consultant_id){
+                        user.consultant.splice(user.consultant.indexOf(user.consultant), 1)
+                    }
+                }
+
+                await users.save();
+
+                res.status(200).json({"message": "Consultant Deleted"})
+            }
+        })
+} catch (e){
+    return next(e)
+    }
+}))
+
 app.post('/set-consultant', verifyToken, catchAsync(async (req, res, next) => {
     try {
         jwt.verify(req.token, 'secretkey', async(err, data) => {
@@ -418,12 +445,19 @@ app.post('/set-consultant', verifyToken, catchAsync(async (req, res, next) => {
                 const consultant = await Consultant.findOne({consultant_id: req.body.consultant_id})
 
                 if(consultant){
-                    userNew.consultant.push(req.body.consultant_id)
+                    userNew.consultant.push(consultant)
+                    consultant.business.push(userNew)
 
+                    consultant.save()
                     await userNew.save()
-                    const resUser = await User.findOne({username: data.user})
+                    const resUser = await User.findOne({username: data.user}).populate({
+                        path: 'consultant',
+                        populate: {
+                            path: 'business'
+                        }
+                    })
 
-                    res.status(200).json({"message": "Ok", "response": resUser, "consultant": consultant})
+                    res.status(200).json({"message": "Ok", "response": resUser})
                 } else {
                     res.status(403).json({"message": "Consultant does not exist"})
                 }

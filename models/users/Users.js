@@ -18,7 +18,10 @@ const userSchema = new mongoose.Schema({
     dateJoined : {
         type: String,
     },
-    consultant: [String],
+    consultant: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'consultants'
+    }],
     phoneVerified : Boolean,
     idVerified : {
         type: Boolean,
