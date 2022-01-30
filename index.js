@@ -274,6 +274,23 @@ app.get('/fetch-business-message/:id', (catchAsync( async( req, res, next) => {
 })))
 
 
+app.get('/fetch-business-messages/:id', (catchAsync( async( req, res, next) => {
+    try {
+        const { id } = req.params;
+
+        const current_consultant = await Message.find({channel: id});
+
+        if(current_consultant){
+            return res.status(200).json({"messages": current_consultant});
+        } else {
+            return res.status(401).json({"messages": "No Messages found"});
+        }
+    } catch(e){
+        return next(e)
+    }
+})))
+
+
 
 
 app.post('/user-verification', verifyToken, catchAsync( async( req, res, next) => {
