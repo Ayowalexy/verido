@@ -1657,6 +1657,17 @@ app.post('/vidoes', catchAsync(async (req, res, next) => {
     }
 }))
 
+app.post('/delete-video/:id', catchAsync(req, res, next) => {
+    try {
+        const {id } = req.params;
+        const deleteVidoe = await Video.findOneAndDelete({vidoeID: req.body.vidoeID})
+
+        return res.status(200).json({"message": "Video Deleted", "response": deleteVidoe})
+
+    } catch (e){
+        return next(e)
+    }
+})
 // app.post('/reset-password', async (req, res) => {
 //     const { password } = req.body
 //     await User.findOneAndUpdate({username: phoneNumber, { username: }})
