@@ -36,11 +36,14 @@ module.exports.veridoDB = catchAsync(async (req, res, next) => {
                 const spacesEndpoint = new AWS.Endpoint('sfo3.digitaloceanspaces.com');
                 const s3 = new AWS.S3({
                     endpoint: spacesEndpoint,
-                    accessKeyId: '43HT5DWBCV3XA3LLQJM7' || process.env.SPACES_KEY, 
-                    secretAccessKey: 'A7gyjuwBizzk56luyeFYcyJDa/f0CO8Z+A9iK1CtrXA' || process.env.SPACES_SECRET 
+                    accessKeyId: 'Z3UR6ESXJR6WTYKLUTWG' || process.env.SPACES_KEY, 
+                    secretAccessKey: '0KWt/hsyoKDsb16q8cmCNoqFsugsgxx3g3+UJ4QU3TI' || process.env.SPACES_SECRET 
+                    // accessKeyId: '43HT5DWBCV3XA3LLQJM7' || process.env.SPACES_KEY, 
+                    // secretAccessKey: 'A7gyjuwBizzk56luyeFYcyJDa/f0CO8Z+A9iK1CtrXA' || process.env.SPACES_SECRET 
                 });
         
-        
+                // 
+                // 
                 // var params = {
                 //     Bucket: "verido-space"
                 // };
@@ -62,7 +65,7 @@ module.exports.veridoDB = catchAsync(async (req, res, next) => {
         
         
                 var params = {
-                    Bucket: "verido-files",
+                    Bucket: "verido",
                     Key: `${originalname}`,
                     Body: fs.createReadStream(path),
                     ACL: "private",
@@ -79,7 +82,7 @@ module.exports.veridoDB = catchAsync(async (req, res, next) => {
                 const expireSeconds = 600000000000
         
                 const url = s3.getSignedUrl('getObject', {
-                    Bucket: 'verido-files',
+                    Bucket: 'verido',
                     Key: `${originalname}`,
                     Expires: expireSeconds
                 });
