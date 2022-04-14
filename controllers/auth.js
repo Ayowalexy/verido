@@ -45,7 +45,7 @@ module.exports.veridoDB = catchAsync(async (req, res, next) => {
                 // 
                 // 
                 // var params = {
-                //     Bucket: "verido-space"
+                //     Bucket: "verido-files"
                 // };
         
                 // s3.createBucket(params, function(err, data) {
@@ -61,11 +61,13 @@ module.exports.veridoDB = catchAsync(async (req, res, next) => {
                 //         })
                 //     };
                 // });
+
+                console.log('Bucket')
                 const { mimetype, originalname, filename, path } = req.file
         
         
                 var params = {
-                    Bucket: "verido",
+                    Bucket: "verido-files",
                     Key: `${originalname}`,
                     Body: fs.createReadStream(path),
                     ACL: "private",
@@ -82,7 +84,7 @@ module.exports.veridoDB = catchAsync(async (req, res, next) => {
                 const expireSeconds = 600000000000
         
                 const url = s3.getSignedUrl('getObject', {
-                    Bucket: 'verido',
+                    Bucket: 'verido-files',
                     Key: `${originalname}`,
                     Expires: expireSeconds
                 });
