@@ -11,6 +11,9 @@ const Consultant = require('../models/admin/Consultant')
 // const schedule = requrie('node-schedule')
 const SubScription = require('../models/users/Subcription.js')
 const Message = require('../models/admin/Messages')
+const {TWILO_ACCOUNT_SID, VERIFICATION_SID, SECRET_KEY, TWILO_AUTH_TOKEN} = process.env
+const twilio = require('twilio')(TWILO_ACCOUNT_SID, TWILO_AUTH_TOKEN);
+const nodemaile = require('nodemailer')
 
 // const rule = new schedule.RecurrenceRule();
 // rule.minute = 30;
@@ -203,6 +206,106 @@ module.exports.fetch_admin_message = catchAsync( async ( req, res, next) => {
       return res.status(200).json({messges: current_admin})
     }
   } catch (e){
+    return next(e)
+  }
+})
+
+module.exports.suspendUser = catchAsync( async (req, res, next) => {
+  try{
+        const { id } = req.params;
+        const user = await User.findById({_id: id})
+        if(user){
+          
+        
+            if(req.params.type == 'suspend-user'){
+              await User.findByIdAndUpdate({_id: id, }, 
+                {password: user.password.concat('suspended'), suspended: true})
+
+              twilio.messages
+                .create({
+                  body: `Your account is suspended`,
+                  from: '+447401123846',
+                  to: user.username
+                })
+                .then(message => console.log(message.sid))
+                .catch(e => console.log(e))
+            } else {
+              await User.findByIdAndUpdate({_id: id, }, 
+                {password: user.password.slice(0, user.password.indexOf('suspended')), suspended: false})
+              twilio.messages
+              .create({
+                body: `Your account is Re-activated`,
+                from: '+447401123846',
+                to: user.username
+              })
+              .then(message => console.log(message.sid))
+              .catch(e => console.log(e))
+            }
+
+  let transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: "codewithbiyi@gmail.com", 
+      pass: "08032243047", 
+    },
+  });
+
+  const mailOptions = {
+    from: 'codewithbiyi@gmail.com',
+    to: 'seinde4@yahoo.com',
+    subject: 'Sending Email using Node.js',
+    text: 'That was easy!',
+    html: "<b>Hello world?</b>", // html body
+  };
+ 
+//   transporter.sendMail(mailOptions, function(error, info){
+//   if (error) {
+//     console.log(error);
+//   } else {
+//     console.log('Email sent: ' + info.response);
+//   }
+// });
+
+
+
+        // const transporter = nodemailer.createTransport({
+        //   service: 'gmail',
+        //   auth: {
+        //     user: `${process.env.FROM}`,
+        //     pass: `${process.env.PASSWORD}`,
+        //   },
+        // })
+
+        // const mailOptions = {
+        //   from:   `${process.env.FROM}`, 
+        //   to: `${user.email}`, 
+        //   message: 'Account Suspended',
+        //   subject: 'Den don suspend your account alaye', 
+        //   text: "Follow admin reason make he help ypu open am ASAP"
+        // }
+
+        // transporter.sendMail(mailOptions, (error, info) => {
+        //   if (error) {
+        //       console.log(error)
+        //     res.json({
+        //       status: 'fail'
+        //     })
+        //   } else {
+        //     res.status(200).json(info)
+        //       console.log(info)
+        //     res.json({
+        //      status: 'success'
+        //     })
+        //   }
+        // })
+        
+
+        res.status(200).json({"message": "Ok"})
+        }
+        
+       
+
+  } catch(e){
     return next(e)
   }
 })

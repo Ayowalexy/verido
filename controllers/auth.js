@@ -505,7 +505,18 @@ module.exports.register = catchAsync(async(req, res, next) => {
         bcrypt.hash(1234, 12, function(err, hash) {
             token = hash;
         })
-        const { full_name = null, email = null, username, consultantID, password, organization_id = null } = req.body;
+        const { 
+            full_name = null, 
+            email = null, 
+            username,
+             consultantID, 
+             password, 
+             organization_id = null,
+             business_name = null,
+            business_sector = null,
+            business_type = null,
+
+             } = req.body;
 
         let emailUser;
         // let org_id;
@@ -557,9 +568,9 @@ module.exports.register = catchAsync(async(req, res, next) => {
 
 
         const newBusiness = new Business({
-            name: null,
-            sector : null,
-            type : null,
+            name: business_name,
+            sector : business_sector,
+            type : business_type,
             currency : 'US Dollar',
             currencySymbol : '$'
         })
@@ -601,9 +612,7 @@ module.exports.register = catchAsync(async(req, res, next) => {
             user.password = hash
         })
 
-        user.consultant.push(consultantID)
 
-        await user.save()
 
         const consultant = await Consultants.findOne({
             consultant_id: consultantID
@@ -611,8 +620,13 @@ module.exports.register = catchAsync(async(req, res, next) => {
 
         if(consultant){
             consultant.business.push(user)
+            user.consultant.push(consultant)
             await consultant.save()
         }
+
+        await user.save()
+
+
         
         const Founduser = await User.findOne({username}).populate({
             path: 'product',
@@ -883,7 +897,7 @@ module.exports.login =  async (req, res, next) => {
     .populate('consultant')
 
 
-if(user !== null){
+if((user !== null) && !(user.suspended)){
     await bcrypt.compare(password, user.password).then(function(result){
         switch(result){
             case true: 
@@ -904,6 +918,8 @@ if(user !== null){
     })
 }
     req.session.currentUser = req.body;
+
+    res.status(400).json({"message": "User is not available"})
 
     //if(user){
        // const { username } = req.session.currentUser;

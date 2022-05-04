@@ -26,6 +26,10 @@ const userSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'consultants'
     }],
+    suspended: {
+        type: Boolean,
+        default: false
+    },
     phoneVerified : Boolean,
     idVerified : {
         type: Boolean,
