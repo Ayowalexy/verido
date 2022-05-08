@@ -183,6 +183,21 @@ app.get('/fetch-consultant', catchAsync( async( req, res, next) => {
     }
 }))
 
+app.post('/update-consultant', catchAsync(async(req, res, next) => {
+    try {
+        const {userId, consultantId} = req.body;
+        const consultant = await Consultant.findOne({consultant_id: consultantId})
+
+        if(consultant){
+            await User.findOneAndUpdate({_id: userId}, {consultant: [consultant]})
+        }
+
+        res.json({"message": "Ok"})
+    } catch(e){
+        return next(e)
+    }
+}))
+
 app.get('/fetch-consultant/:id', catchAsync( async (req, res, next) => {
     try {
         const { id } = req.params;
@@ -197,6 +212,8 @@ app.get('/fetch-consultant/:id', catchAsync( async (req, res, next) => {
                 path: 'subscription_status'
             }
         })
+
+
 
         
 

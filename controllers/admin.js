@@ -162,6 +162,7 @@ module.exports.business = catchAsync(async( req, res, next) => {
           .populate('subscription_status')
           .populate('userID')
           .populate('insitution')
+          .populate('consultant')
 
           res.status(200).json({"code": 200, "response": users})
   //       }
@@ -306,6 +307,22 @@ module.exports.suspendUser = catchAsync( async (req, res, next) => {
        
 
   } catch(e){
+    return next(e)
+  }
+})
+
+
+module.exports.updateUserInformation = catchAsync( async (req, res, next) => {
+  try {
+    const {phoneVerified} = req.body;
+    const user = await User.findByIdAndUpdate({
+      _id: req.params.id
+    }, {
+      phoneVerified: phoneVerified
+    })
+
+    res.json({"message": "Ok"})
+  } catch (e){
     return next(e)
   }
 })
