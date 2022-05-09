@@ -895,9 +895,9 @@ module.exports.login =  async (req, res, next) => {
     .populate('videos')
     .populate('insitution')
     .populate('consultant')
+console.log(user !== null && !(user.suspended))
 
-
-if((user !== null) && !(user.suspended)){
+if(user !== null){
     await bcrypt.compare(password, user.password).then(function(result){
         switch(result){
             case true: 
