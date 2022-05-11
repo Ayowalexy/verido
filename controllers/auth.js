@@ -895,7 +895,7 @@ module.exports.login =  async (req, res, next) => {
     .populate('videos')
     .populate('insitution')
     .populate('consultant')
-console.log(user !== null && !(user.suspended))
+
 
 if(user !== null){
     await bcrypt.compare(password, user.password).then(function(result){
@@ -919,7 +919,7 @@ if(user !== null){
 }
     req.session.currentUser = req.body;
 
-    res.status(400).json({"message": "User is not available"})
+    // res.status(400).json({"message": "User is not available"})
 
     //if(user){
        // const { username } = req.session.currentUser;
