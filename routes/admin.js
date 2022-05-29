@@ -23,5 +23,6 @@ router.get('/fetch-admin-message/:admin', Admin.fetch_admin_message)
 
 router.get('/suspend-user/:id/:type', Admin.suspendUser)
 
+router.post('/update-business/:id', Admin.updateBusiness)
 
 module.exports = router

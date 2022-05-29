@@ -10,6 +10,7 @@ const nodemailer = require('nodemailer')
 const Consultant = require('../models/admin/Consultant')
 // const schedule = requrie('node-schedule')
 const SubScription = require('../models/users/Subcription.js')
+const Business = require('../models/users/Business')
 const Message = require('../models/admin/Messages')
 const {TWILO_ACCOUNT_SID, VERIFICATION_SID, SECRET_KEY, TWILO_AUTH_TOKEN} = process.env
 const twilio = require('twilio')(TWILO_ACCOUNT_SID, TWILO_AUTH_TOKEN);
@@ -44,6 +45,8 @@ module.exports.admin_login = catchAsync(async(req, res, next) => {
         const { email, password } = req.body;
         const admin = await Admin.findOne({username: email})
         const consultant = await Consultant.findOne({email: email})
+
+        console.log('user', admin, consultant)
         if(admin){
             bcrypt.compare(password, admin.password).then(function(result){
               console.log('admin')
@@ -323,6 +326,23 @@ module.exports.updateUserInformation = catchAsync( async (req, res, next) => {
 
     res.json({"message": "Ok"})
   } catch (e){
+    return next(e)
+  }
+})
+
+
+module.exports.updateBusiness = catchAsync(async (req, res, next) => {
+  try {
+    const user = await User.findById(req.params.id).populate('business')
+console.log(req.body)
+    
+    await Business.findByIdAndUpdate({_id: user.business._id.toString()}, {...req.body})
+
+    const user_1 = await User.findById(req.params.id).populate('business')
+
+    console.log('user found', user_1.business)
+    res.send("helo")
+  } catch(e){
     return next(e)
   }
 })
