@@ -25,4 +25,10 @@ router.get('/suspend-user/:id/:type', Admin.suspendUser)
 
 router.post('/update-business/:id', Admin.updateBusiness)
 
+router.post('/edit-vidoes/:id', Admin.editVideos)
+
+router.post('/update-subscription/:id', Admin.updateSubscription)
+
+router.post('/update-fullname/:id', Admin.updateUsername)
+
 module.exports = router

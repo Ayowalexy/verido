@@ -15,6 +15,7 @@ const Message = require('../models/admin/Messages')
 const {TWILO_ACCOUNT_SID, VERIFICATION_SID, SECRET_KEY, TWILO_AUTH_TOKEN} = process.env
 const twilio = require('twilio')(TWILO_ACCOUNT_SID, TWILO_AUTH_TOKEN);
 const nodemaile = require('nodemailer')
+const Videos = require('../models/users/Videos')
 
 // const rule = new schedule.RecurrenceRule();
 // rule.minute = 30;
@@ -342,6 +343,41 @@ console.log(req.body)
 
     console.log('user found', user_1.business)
     res.send("helo")
+  } catch(e){
+    return next(e)
+  }
+})
+
+module.exports.editVideos =  catchAsync(async (req, res, next) => {
+  try {
+    const vid = await Videos.findById(req.params.id)
+    console.log(vid)
+    
+    await Videos.findByIdAndUpdate({_id: req.params.id}, {...req.body})
+
+    res.status(200).json({"status": "succcess"})
+  } catch (e){
+    return next(e)
+  }
+})
+
+
+module.exports.updateSubscription = catchAsync(async (req, res, next) => {
+  try {
+      await SubScription.findByIdAndUpdate({_id: req.params.id}, {...req.body})
+      res.status(200).json({messge: "Ok"})
+      
+
+  } catch (e){
+    return next(e)
+  }
+})
+
+
+module.exports.updateUsername = catchAsync(async (req, res, next) => {
+  try {
+    await User.findOneAndUpdate({_id: req.params.id}, {...req.body})
+    res.status(200).json({message: "Ok"})
   } catch(e){
     return next(e)
   }
